@@ -1,18 +1,22 @@
-'''     load data with the etl module       '''
-
 from etl import ProvenanceExtractor
+import torch
+from typing import Dict
+from helpers.config import Maximization, Objective
 
-# for now we set here the optimization parameters we want
-#TODO: require these information as input
-y_par = {
-    'max': 'ACC_val',
-    'min': 'cpu_usage'
-}
-
-def load_data(data_folder: str):
+def load_data(data_folder: str, data_needed: Dict):
     '''use etl module to provide training data and parameters to optimize'''
-    extractor = ProvenanceExtractor(data_folder, y_par)
-    data, parameters = extractor.extract_all()
-    #for now we need the sum of cpu_usage values:
-    data['cpu_usage'] = data['cpu_usage'].sum()
-    return data, parameters
+    print("    -> Loading Data")
+    #extract data from etl module
+    extractor = ProvenanceExtractor(data_folder, data_needed)
+    inp, out = extractor.extract_all()
+
+    #negate the metrics to minimize to perform maximization
+    for n,key in enumerate(data_needed['output']):
+        if key in Maximization.MINIMIZE:
+            for row in out:
+                row[n] = -row[n]
+
+    X_ = torch.tensor(inp, dtype=torch.float64)
+    Y_ = torch.tensor(out, dtype=torch.float64)
+    objective = Objective.SINGLE if Y_.shape[1] == 1 else Objective.MULTI
+    return X_, Y_, objective

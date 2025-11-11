@@ -1,51 +1,74 @@
 from bo_loop import bo_loop
+import traceback
 from models import train_model
-from helpers.config import OptimizationConfig
+from helpers.config import OptimizationConfig,BoundsGenerator
 from data_loader import load_data
-from helpers.config import BoundsGenerator
+from helpers.utils import visualize_data, validate_input_data, validate_output_data
 from helpers.processing import normalize_val, denormalize_val
 
-#taking parameters to optimize and metrics to maximize as input
-metrics = input('Which metric(s) do you want to maximize/minimize? (use a \' \' to separate each metric)\n')
-if metrics is None:
-    raise ValueError(f"You have to provide at least one metric to maximize/minimize")
-parameters = input ('Which parameters do you want to optimize? (use a \' \' to separate each metric)\n')
-if parameters is None:
-    raise ValueError(f"You have to provide at least one parameter to optimize")
-data_needed = {
-    'output': list(metrics.split(' ')),
-    'input': list(parameters.split(' '))
-}
+def main():
+    # taking as input metrics to maximize/minimize and parameters to optimize
+    inserted = input(f'SELECT THE METRIC(S) YOU WANT TO MAXIMIZE/MINIMIZE\n') 
+    metrics = list(inserted.split(' '))
+    validate_input_data(metrics)
 
-print(f"... Starting Execution ...")
+    inserted = input(f'SELECT THE PARAMETER(S) YOU WANT TO OPTIMIZE\n')
+    parameters = list(inserted.split(' '))
+    validate_output_data(parameters)
 
-#extract data
-input, output, objective = load_data('./prov', data_needed)
+    # ETL Module
+    data_needed = {
+        'output': metrics,
+        'input': parameters
+    }
+    X_data, Y_data, objective = load_data('./prov', data_needed)
 
-#define problem and bounds
-config = OptimizationConfig(objective, 3)
-bounds_manager = BoundsGenerator()
-original_bounds = bounds_manager.generate_bounds(input)
+    # problem initialization
+    config = OptimizationConfig( 
+        data_needed['output'], 
+        data_needed['input'], 
+        objective,
+        n_candidates=3, 
+        verbose=False
+    )
+    if config.verbose:
+        print(f"Working data with {objective.value} objective:\nINPUT:")
+        visualize_data(X_data, config.optimization_parameters)
+        print("OUTPUT:")
+        visualize_data(Y_data, config.objective_metrics)
 
-#normalize and standardize values
-X_normalized, Y_standardized = normalize_val(input, output, original_bounds)
+    # normalize parameters and standardize metrics with their bounds
+    bounds_manager = BoundsGenerator()
+    original_bounds = bounds_manager.generate_bounds(X_data)
+    if config.verbose:
+        print(f"\nBounds Generated:")
+        visualize_data(original_bounds, config.optimization_parameters)
 
-#training model
-model = train_model(objective, X_normalized, Y_standardized)
+    X_normalized, Y_standardized = normalize_val(X_data, Y_data, original_bounds)
+    if config.verbose:
+        print(f"\nNormalized data: \n INPUT:")
+        visualize_data(X_normalized, config.optimization_parameters)
+        print("OUTPUT:")
+        visualize_data(Y_standardized, config.objective_metrics)
 
-#generate and optimize candidates 
-candidates, acq_val = bo_loop(
-    config, model, X_normalized.shape[1], Y_standardized, bounds_manager
-)
+    # training model
+    model = train_model(objective, X_normalized, Y_standardized)
 
-#denormalize candidates
-candidates_denorm = denormalize_val(candidates, original_bounds)
-c = candidates_denorm.tolist()
+    # generate and optimize candidates
+    candidates, acq_val = bo_loop(
+        config, model, X_normalized.shape[1], Y_standardized, bounds_manager
+    )
 
-#print results
-print(f'='*60)
-print(f"    Candidates found:   [acq_val = {acq_val:.4f}]")
-print(f"                    {data_needed['input']}")
-for i,c in enumerate(c):
-    print(f"        Candidate {i+1}:        {c[0]:.1f},         {c[1]:.1f},         {c[2]:.4f}")
-print(f"... Done ...")
+    candidates_denorm = denormalize_val(candidates, original_bounds)
+    print(f'='*60)
+    print(f"Candidates suggested with acq_value=[{acq_val}]")
+    visualize_data(candidates_denorm, config.optimization_parameters)
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception as e:
+        print(f"An Error Occured:")
+        print(f"   → {type(e).__name__}: {e}")
+        print("\nError details:")
+        traceback.print_exc()

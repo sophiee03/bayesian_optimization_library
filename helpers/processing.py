@@ -3,26 +3,22 @@ from botorch.utils.transforms import normalize, standardize, unnormalize
 
 def normalize_val(x: torch.Tensor, y: torch.Tensor, bounds: torch.Tensor):
     '''function to normalize data'''
-    print(f"    -> Normalizing and standardizing")
-    #normalize data to have the same scale for each parameter
     X_norm = normalize(x, bounds)
-    #standardize metrics 
+
     if y.dim() >= 2 and y.shape[1] > 1:
-        Y_stand=[]
+        Y_stand=torch.zeros_like(y)
         for i in range(y.shape[1]):
             y_col = y[:,i:i+1]
-            #check if there are NaN values
             if torch.isnan(y_col).any():
-                raise ValueError(f"Output column {i} contains NaN in original data!")
+                raise ValueError(f"Output column {i} contains NaN in extracted data!")
             mean = y_col.mean(dim=0)
             std = y_col.std(dim=0)
             std[std==0] = 1.0
-            Y_stand.append((y_col - mean) / std)
+            Y_stand[:,i] = ((y_col - mean) / std).squeeze(-1)
     else:
-        Y_stand = standardize(y)
+        Y_stand = (standardize(y)).unsqueeze(-1)
     return X_norm, Y_stand
 
 def denormalize_val(t: torch.Tensor, bounds: torch.Tensor) -> torch.Tensor:
-    '''function to denormalize values to the original bounds'''
-    print(f"    -> Denormalizing outputs")
+    '''function to denormalize data to the original bounds'''
     return unnormalize(t, bounds)

@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import List
-import torch
+from typing import List, Dict, Callable
+from functools import wraps
+import torch, logging, time
+from contextlib import contextmanager
 
 PRECISIONS = {
     'param_lr': '.6f',
@@ -41,7 +43,7 @@ class  OptimizationConfig:
         - n_candidates -> number of candidates the bo_loop will return               (default = 1)
         - n_restarts -> number of restarts for the optimization routine              (default = 10)
         - raw_samples -> number of random samples when initializing the optimization (default = 1000)
-        - verbose S
+        - verbose
     '''
     objective_metrics: List[str]
     optimization_parameters: List[str]
@@ -72,18 +74,84 @@ class  OptimizationConfig:
 @dataclass
 class BoundsGenerator():
     '''configuration for parameter bounds needed in normalization'''
-    margin: float = 0.1
+    margin: float = 0.02
+    force_positive: bool = True
 
     def generate_bounds(self, t: torch.Tensor):
         lower = t.min(dim=0)[0]
         upper = t.max(dim=0)[0]
 
         range = (upper - lower)*self.margin
+
         lower = lower-range
         upper = upper+range
+
+        # excludes negative bounds
+        if self.force_positive:
+            lower = torch.clamp(lower, min=0.0)
+
         return torch.stack([lower, upper])
     
     def generate_norm_bounds(self, n: int):
         return torch.tensor([   [0.0]*n,
                                 [1.0]*n], dtype=torch.float64)
     
+class Timer:
+    '''register and confront timings'''
+    def __init__(self, logger: logging.Logger = None):
+        self.timings: Dict[str, float] = {}
+        self.logger = logger or logging.getLogger(__name__)
+
+    @contextmanager
+    def measure(self, name: str):
+        '''context manager to measure a specific block of code'''
+        start = time.perf_counter()
+        try:
+            yield
+        finally:
+            elapsed = time.perf_counter() - start
+            self._record_timings(name, elapsed)
+
+    def _record_timings(self, name: str, elapsed: float):
+        '''register timings measured'''
+        if name not in self.timings:
+            self.timings[name] = []
+        self.timings[name] = elapsed
+
+    def time_function(self, name: str = None):
+        def decorator(func: Callable) -> Callable:
+            optimizer_name = name or func.__name__
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                start = time.perf_counter()
+                try:
+                    result = func(*args, **kwargs)
+                    return result
+                finally:
+                    elapsed = time.perf_counter() - start
+                    self._record_timings(optimizer_name, elapsed)
+            return wrapper
+        return decorator
+
+    def get_opt_time(self, name: str) -> float:
+        '''obtain only the time measure required'''
+        if name not in self.timings.keys():
+            raise ValueError(f"Time not found for {name} optimizer")
+        return self.timings[name]
+
+    def print_summary(self):
+        sorted_opt = sorted(
+            self.timings.keys(),
+            key=lambda x: sum(self.timings[x]),
+            reverse=True
+        )
+        self.logger.info("=" * 60)
+
+        for name in sorted_opt:
+            self.logger.info(f"total elapsed time for {name} optimization:       {self.timings[name].sum():.4f}")
+
+        self.logger.info("=" * 60)
+
+    def reset(self):
+        self.timings.clear()
+

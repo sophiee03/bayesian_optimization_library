@@ -1,5 +1,6 @@
 from bo_loop import bo_loop
-import traceback
+import traceback, warnings, torch
+from helpers.logger import setup_console_logger
 from models import train_model
 from helpers.config import OptimizationConfig,BoundsGenerator
 from data_loader import load_data
@@ -7,6 +8,8 @@ from helpers.utils import visualize_data, validate_input_data, validate_output_d
 from helpers.processing import normalize_val, denormalize_val
 
 def main():
+    logger = setup_console_logger()
+
     # taking as input metrics to maximize/minimize and parameters to optimize
     inserted = input(f'SELECT THE METRIC(S) YOU WANT TO MAXIMIZE/MINIMIZE\n') 
     metrics = list(inserted.split(' '))
@@ -39,7 +42,7 @@ def main():
 
     # normalize parameters and standardize metrics with their bounds
     bounds_manager = BoundsGenerator()
-    original_bounds = bounds_manager.generate_bounds(X_data)
+    original_bounds = bounds_manager.generate_bounds(X_data).to(dtype=torch.float64)
     if config.verbose:
         print(f"\nBounds Generated:")
         visualize_data(original_bounds, config.optimization_parameters)
@@ -55,17 +58,20 @@ def main():
     model = train_model(objective, X_normalized, Y_standardized)
 
     # generate and optimize candidates
-    candidates, acq_val = bo_loop(
+    results = bo_loop(
         config, model, X_normalized.shape[1], Y_standardized, bounds_manager
     )
 
-    candidates_denorm = denormalize_val(candidates, original_bounds)
-    print(f'='*60)
-    print(f"Candidates suggested with acq_value=[{acq_val}]")
-    visualize_data(candidates_denorm, config.optimization_parameters)
+    for k, v in results.items():
+        candidates = v[0]
+        candidates_denorm = denormalize_val(candidates[0], original_bounds)
+        print(f'='*60)
+        print(f"Candidates suggested with method \'{k}\'\n     -- acq_value=[{candidates[1].tolist()}] \n     -- Elapsed time: {v[1]:.4f}s")
+        visualize_data(candidates_denorm, config.optimization_parameters)
 
 if __name__ == '__main__':
     try:
+        warnings.filterwarnings('ignore')
         main()
     except Exception as e:
         print(f"An Error Occured:")

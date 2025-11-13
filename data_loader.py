@@ -1,17 +1,20 @@
 from etl import ProvenanceExtractor
 import torch
+import logging
 from typing import Dict
 from helpers.config import METRICS, Objective
 
 def load_data(data_folder: str, data_needed: Dict):
     '''use etl module to provide training data'''
+    logger = logging.getLogger('BO')
     extractor = ProvenanceExtractor(data_folder, data_needed)
     inp, out = extractor.extract_all()
 
+    logger.info("   -> Retrieved experiment data")
     for n,key in enumerate(data_needed['output']):
         if METRICS[key]=='MIN':
-            for row in out:
-                row[n] = -row[n]
+            for row in range(len(out)):
+                out[row][n] = -out[row][n]
 
     X_ = torch.tensor(inp, dtype=torch.float64)
     Y_ = torch.tensor(out, dtype=torch.float64)

@@ -1,5 +1,5 @@
 import torch, logging
-from helpers.config import Objective, OptimizationConfig, Timer
+from helpers.config import Objective, OptimizationConfig, Timer, OPTIMIZERS
 from botorch.acquisition import qLogExpectedImprovement
 from botorch.acquisition.multi_objective.logei import qLogExpectedHypervolumeImprovement
 from botorch.utils.multi_objective.box_decompositions.non_dominated import FastNondominatedPartitioning
@@ -80,24 +80,39 @@ def bo_loop(config: OptimizationConfig, model, dim: int, Y, bm: BoundsGenerator)
     with timer.measure('acquisition_function'):
         acqf = generate_acqf(config, model, Y)
     
-    logger.info(f"   -> Created acquisition function [{timer.get_opt_time('acquisition_function'):.4f}s]")
+    logger.info(f"   -> Created acquisition function            [{timer.get_opt_time('acquisition_function'):.4f}s]")
 
-    result_basic = basic_optim(acqf, bm, dim, config)
-    time_basic = timer.get_opt_time('optimize_acqf')
-    
-    result_cyclic = cyclic_optim(acqf, bm, dim, config)
-    time_cyclic = timer.get_opt_time('optimize_acqf_cyclic')
-    
-    result_batch = batch_init_cond_optim(acqf, bm, dim, config)
-    time_batch = timer.get_opt_time('batch_initial_condition')
+    if config.optimizers == OPTIMIZERS[3]:
+        result_basic = basic_optim(acqf, bm, dim, config)
+        time_basic = timer.get_opt_time('optimize_acqf')
+        
+        result_cyclic = cyclic_optim(acqf, bm, dim, config)
+        time_cyclic = timer.get_opt_time('optimize_acqf_cyclic')
+        
+        result_batch = batch_init_cond_optim(acqf, bm, dim, config)
+        time_batch = timer.get_opt_time('batch_initial_condition')
+
+    elif config.optimizers == OPTIMIZERS[0]:
+        result_basic = basic_optim(acqf, bm, dim, config)
+        time_basic = timer.get_opt_time('optimize_acqf')
+        result_cyclic, time_cyclic, result_batch, time_batch = (None, None, None, None)
+
+    elif config.optimizers == OPTIMIZERS[1]:
+        result_batch = batch_init_cond_optim(acqf, bm, dim, config)
+        time_batch = timer.get_opt_time('batch_initial_condition')
+        result_cyclic, time_cyclic, result_basic, time_basic = (None, None, None, None)
+
+    elif config.optimizers == OPTIMIZERS[2]:
+        result_cyclic = cyclic_optim(acqf, bm, dim, config)
+        time_cyclic = timer.get_opt_time('optimize_acqf_cyclic')
+        result_basic, time_basic, result_batch, time_batch = (None, None, None, None)
 
     results = {
         'optimize_acqf': (result_basic, time_basic),
         'optimize_acqf_cyclic': (result_cyclic, time_cyclic),
-        'batch_initial_condition': (result_batch, time_batch)
+        'batch_init_cond': (result_batch, time_batch)
     }
 
     logger.info("   -> Optimization completed")
 
     return results
-    

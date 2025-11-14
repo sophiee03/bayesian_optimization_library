@@ -21,5 +21,5 @@ def train_model(objective: Objective, X_normalized: torch.Tensor, Y_standardized
         
         fit_gpytorch_mll(mll)
 
-    logger.info(f"   -> Model created and trained [{timer.get_opt_time('model_training'):.4f}s]")
+    logger.info(f"   -> Model created and trained               [{timer.get_opt_time('model_training'):.4f}s]")
     return model

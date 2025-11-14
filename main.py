@@ -1,39 +1,59 @@
 from bo_loop import bo_loop
-import traceback, warnings, torch
+import traceback, warnings, torch, argparse
+import matplotlib.pyplot as plt
 from helpers.logger import setup_console_logger
 from models import train_model
-from helpers.config import OptimizationConfig,BoundsGenerator
+from helpers.config import OptimizationConfig,BoundsGenerator, METRICS, VALID_PARAMETERS, OPTIMIZERS
 from data_loader import load_data
-from helpers.utils import visualize_data, validate_input_data, validate_output_data
+from helpers.plot import plot_data
+from helpers.utils import visualize_data
 from helpers.processing import normalize_val, denormalize_val
 
-def main():
+def parse_arg():
+    parser = argparse.ArgumentParser(description = "Bayesian Optimization with BoTorch")
+    parser.add_argument('--folder', type=str, default='./prov', help="Folder to extract training data")
+    parser.add_argument('--output', nargs='+', type=str, default=list('ACC_val'), 
+                        choices=list(METRICS.keys()),
+                        help="Metrics to maximize/minimize")
+    parser.add_argument('--input', nargs='+', type=str, default=list('param_lr'),
+                        choices=list(VALID_PARAMETERS),
+                        help="Parameters to optimize")
+    parser.add_argument('--n_candidates', type=int, default=1, 
+                        help="number of candidates to generate")
+    parser.add_argument('--num_restarts', type=int, default=10,
+                        help="Number of restarts of the optimizer")
+    parser.add_argument('--raw_samples', type=int, default=1000,
+                        help="number of raw samples to generate before choosing the candidates")
+    parser.add_argument('--optimizer', default='optimize_acqf', 
+                        choices=list(OPTIMIZERS),
+                        help="optimizer to choose the candidates")
+    parser.add_argument('--verbose', action='store_true')
+
+    return parser.parse_args()
+
+def main(args):
     logger = setup_console_logger()
 
-    # taking as input metrics to maximize/minimize and parameters to optimize
-    inserted = input(f'SELECT THE METRIC(S) YOU WANT TO MAXIMIZE/MINIMIZE\n') 
-    metrics = list(inserted.split(' '))
-    validate_input_data(metrics)
-
-    inserted = input(f'SELECT THE PARAMETER(S) YOU WANT TO OPTIMIZE\n')
-    parameters = list(inserted.split(' '))
-    validate_output_data(parameters)
+    metrics = args.output
+    parameters = args.input
 
     # ETL Module
     data_needed = {
         'output': metrics,
         'input': parameters
     }
-    X_data, Y_data, objective = load_data('./prov', data_needed)
+    X_data, Y_data, objective = load_data(args.folder, data_needed)
 
     # problem initialization
     config = OptimizationConfig( 
         data_needed['output'], 
         data_needed['input'], 
         objective,
-        n_candidates=3, 
-        verbose=False
+        args.n_candidates, 
+        verbose=args.verbose,
+        optimizers=args.optimizer
     )
+
     if config.verbose:
         print(f"Working data with {objective.value} objective:\nINPUT:")
         visualize_data(X_data, config.optimization_parameters)
@@ -62,17 +82,34 @@ def main():
         config, model, X_normalized.shape[1], Y_standardized, bounds_manager
     )
 
+    print(results.keys())
+    
+    fig = []
     for k, v in results.items():
-        candidates = v[0]
-        candidates_denorm = denormalize_val(candidates[0], original_bounds)
+        if k not in config.optimizers.split(' '):
+            continue
+
+        (candidates, acq_val), elapsed_time = v
+
+        candidates_denorm = denormalize_val(candidates, original_bounds)
+
+        fig.append(plot_data(X_data, candidates_denorm, k, config))
+        
         print(f'='*60)
-        print(f"Candidates suggested with method \'{k}\'\n     -- acq_value=[{candidates[1].tolist()}] \n     -- Elapsed time: {v[1]:.4f}s")
+        print(f"Candidates suggested with method \'{k}\'\n     -- acq_value=[{acq_val.tolist()}] \n     -- Elapsed time: {elapsed_time:.4f}s")
         visualize_data(candidates_denorm, config.optimization_parameters)
+    
+    for f in fig:
+        f.show()
+
+    plt.show()
 
 if __name__ == '__main__':
     try:
+        args = parse_arg()
+
         warnings.filterwarnings('ignore')
-        main()
+        main(args)
     except Exception as e:
         print(f"An Error Occured:")
         print(f"   → {type(e).__name__}: {e}")

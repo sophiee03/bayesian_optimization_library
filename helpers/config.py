@@ -27,7 +27,9 @@ METRICS = {
     'memory_usage': 'MIN'
 }
 
-VALID_PARAMETERS = {'param_lr', 'param_epochs', 'param_batch_size', 'param_seed'}
+VALID_PARAMETERS = ['param_lr', 'param_epochs', 'param_batch_size', 'param_seed']
+
+OPTIMIZERS = ['optimize_acqf', 'batch_init_cond', 'optimize_acqf_cyclic', 'optimize_acqf optimize_acqf_cyclic batch_init_cond']
 
 class Objective(Enum):
     SINGLE = "SINGLE"
@@ -50,7 +52,8 @@ class  OptimizationConfig:
     objective: Objective = Objective.SINGLE
     n_candidates: int = 1
     n_restarts: int = 10
-    raw_samples: int = 1000
+    raw_samples: int = 500
+    optimizers: str = 'optimize_acqf optimize_acqf_cyclic batch_init_cond'
     verbose: bool = True
 
     def __post_init__(self):
@@ -67,9 +70,23 @@ class  OptimizationConfig:
         if self.raw_samples < 1:
             raise ValueError(f"raw_samples must at least be 1 \n    (it is suggested to have at least 2*d samples where d is the number of parameters)")
         
+        if self.optimizers is None or self.optimizers not in OPTIMIZERS:
+            raise ValueError(f"optimizer not recognized: {self.optimizers}")
+
     def _objective(self) -> Objective:
         '''returns how many tasks we are executing'''
         return self.objective
+    
+    def _details(self):
+        print(f"{'-'*60}")
+        print(f"CONFIGURATION DETAILS:")
+        print(f"    executing a {self.objective} model with:")
+        print(f"    - Parameters to optimize: {self.optimization_parameters}")
+        print(f"    - Metrics to maximize/minimize: {self.objective_metrics}")
+        print(f"    {self.n_candidates} candidates are required")
+        print(f"    It will be used a {self.optimizers} optimizer(s) with the following parameters:")
+        print(f"    -> n_restarts: {self.n_restarts}    raw_samples: {self.raw_samples}")
+        print(f"{'-'*60}")
     
 @dataclass
 class BoundsGenerator():

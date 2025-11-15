@@ -17,6 +17,8 @@ def parse_arg():
                         help="Metrics to maximize/minimize")
     parser.add_argument('--input', nargs='+', type=str, choices=list(VALID_PARAMETERS),
                         help="Parameters to optimize")
+    parser.add_argument('--multi_model', type=str, choices=['modellistgp', 'kroneckermultitaskgp'],
+                        help="type of model")
     parser.add_argument('--n_candidates', type=int,
                         help="number of candidates to generate")
     parser.add_argument('--n_restarts', type=int, 
@@ -51,9 +53,10 @@ def main(args):
         n_restarts=args.n_restarts,
         raw_samples=args.raw_samples,
         verbose=args.verbose,
-        optimizers=args.optimizer
+        optimizers=args.optimizer,
+        multi_model = args.multi_model
     )
-    config._details()
+
     if config.verbose:
         print(f"Working data with {objective.value} objective:\nINPUT:")
         visualize_data(X_data, config.optimization_parameters)
@@ -75,7 +78,7 @@ def main(args):
         visualize_data(Y_standardized, config.objective_metrics)
 
     # training model
-    model = train_model(objective, X_normalized, Y_standardized)
+    model = train_model(config, X_normalized, Y_standardized)
 
     # generate and optimize candidates
     results = bo_loop(
@@ -91,7 +94,7 @@ def main(args):
 
         candidates_denorm = denormalize_val(candidates, original_bounds)
 
-        fig.append(plot_data(X_data, candidates_denorm, k, config))
+        fig.append(plot_data(X_data, candidates_denorm, acq_val, k, config))
         
         print(f'='*60)
         print(f"Candidates suggested with method \'{k}\'\n     -- acq_value=[{acq_val.tolist()}] \n     -- Elapsed time: {elapsed_time:.4f}s")

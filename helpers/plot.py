@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
 import torch
+from typing import List
 from .config import OptimizationConfig
 
-def plot_data(train: torch.Tensor, result: torch.Tensor, opt_name: str, config: OptimizationConfig):
+def plot_data(train: torch.Tensor, result: torch.Tensor, acqv: float | torch.Tensor, opt_name: str, config: OptimizationConfig):
     fig, ax = plt.subplots()
 
     if result is None:
@@ -18,7 +19,12 @@ def plot_data(train: torch.Tensor, result: torch.Tensor, opt_name: str, config: 
 
     ax.set_xlabel(config.optimization_parameters[0])
     ax.set_ylabel(config.optimization_parameters[1])
-    ax.set_title(f'Results with \'{opt_name}\'')
+    a = acqv.tolist()
+    if isinstance(a, list):
+        title = f'Results with \'{opt_name}\'\nacq_values: ' + ', '.join([f'{v:.4f}' for v in a])
+    else:
+        title = f'Results with \'{opt_name}\'\nacq_value: {a:.4f}'
+    ax.set_title(title)
     ax.legend()
     
     return fig

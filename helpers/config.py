@@ -46,6 +46,7 @@ class  OptimizationConfig:
         - n_restarts -> number of restarts for the optimization routine
         - raw_samples -> number of random samples when initializing the optimization
         - optimizers -> choice of the optimizer(s) to use
+        - multi_model -> choice between modellistgp and kroneckermultitaskgp
         - verbose
     '''
     objective_metrics: List[str]
@@ -55,6 +56,7 @@ class  OptimizationConfig:
     n_restarts: int = 10
     raw_samples: int = 500
     optimizers: str = 'optimize_acqf optimize_acqf_cyclic batch_init_cond'
+    multi_model: str = 'modellistgp'
     verbose: bool = True
 
     def __post_init__(self):

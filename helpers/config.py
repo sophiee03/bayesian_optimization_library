@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from enum import Enum
 from typing import List, Dict, Callable
 from functools import wraps
@@ -41,10 +41,11 @@ class  OptimizationConfig:
     Configuration choices:
         - obj_metrics -> list of metrics to maximize (str)
         - optimization_parameters -> list of parameters to optimize
-        - objective -> number of parameters we want to maximize/minimize             (default = 1)
-        - n_candidates -> number of candidates the bo_loop will return               (default = 1)
-        - n_restarts -> number of restarts for the optimization routine              (default = 10)
-        - raw_samples -> number of random samples when initializing the optimization (default = 1000)
+        - objective -> number of parameters we want to maximize/minimize
+        - n_candidates -> number of candidates the bo_loop will return
+        - n_restarts -> number of restarts for the optimization routine
+        - raw_samples -> number of random samples when initializing the optimization
+        - optimizers -> choice of the optimizer(s) to use
         - verbose
     '''
     objective_metrics: List[str]
@@ -58,6 +59,11 @@ class  OptimizationConfig:
 
     def __post_init__(self):
         '''validate configuration after initialization'''
+        for f in fields(self):
+            value = getattr(self, f.name)
+            if value is None:
+                setattr(self, f.name, f.default)
+
         if self.objective not in Objective:
             raise ValueError(f"objective must be single or multi")
         
@@ -78,6 +84,7 @@ class  OptimizationConfig:
         return self.objective
     
     def _details(self):
+        '''print a summary of the configuration choices adopted'''
         print(f"{'-'*60}")
         print(f"CONFIGURATION DETAILS:")
         print(f"    executing a {self.objective} model with:")
@@ -95,6 +102,7 @@ class BoundsGenerator():
     force_positive: bool = True
 
     def generate_bounds(self, t: torch.Tensor):
+        '''generate the bounds based on the min and max value of the parameter data'''
         lower = t.min(dim=0)[0]
         upper = t.max(dim=0)[0]
 
@@ -110,6 +118,7 @@ class BoundsGenerator():
         return torch.stack([lower, upper])
     
     def generate_norm_bounds(self, n: int):
+        '''generate bounds normalized [0.0][1.0]'''
         return torch.tensor([   [0.0]*n,
                                 [1.0]*n], dtype=torch.float64)
     
@@ -136,6 +145,7 @@ class Timer:
         self.timings[name] = elapsed
 
     def time_function(self, name: str = None):
+        '''register the time that a function takes to execute'''
         def decorator(func: Callable) -> Callable:
             optimizer_name = name or func.__name__
             @wraps(func)
@@ -157,18 +167,18 @@ class Timer:
         return self.timings[name]
 
     def print_summary(self):
+        '''print a summary of each execution time recorded'''
         sorted_opt = sorted(
             self.timings.keys(),
             key=lambda x: sum(self.timings[x]),
             reverse=True
         )
         self.logger.info("=" * 60)
-
         for name in sorted_opt:
             self.logger.info(f"total elapsed time for {name} optimization:       {self.timings[name].sum():.4f}")
-
         self.logger.info("=" * 60)
 
     def reset(self):
+        '''clear all times registered'''
         self.timings.clear()
 

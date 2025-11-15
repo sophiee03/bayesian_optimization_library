@@ -11,21 +11,19 @@ from helpers.processing import normalize_val, denormalize_val
 
 def parse_arg():
     parser = argparse.ArgumentParser(description = "Bayesian Optimization with BoTorch")
-    parser.add_argument('--folder', type=str, default='./prov', help="Folder to extract training data")
-    parser.add_argument('--output', nargs='+', type=str, default=list('ACC_val'), 
-                        choices=list(METRICS.keys()),
+    parser.add_argument('--folder', type=str, default='./prov', 
+                        help="Folder to extract training data")
+    parser.add_argument('--output', nargs='+', type=str, choices=list(METRICS.keys()),
                         help="Metrics to maximize/minimize")
-    parser.add_argument('--input', nargs='+', type=str, default=list('param_lr'),
-                        choices=list(VALID_PARAMETERS),
+    parser.add_argument('--input', nargs='+', type=str, choices=list(VALID_PARAMETERS),
                         help="Parameters to optimize")
-    parser.add_argument('--n_candidates', type=int, default=1, 
+    parser.add_argument('--n_candidates', type=int,
                         help="number of candidates to generate")
-    parser.add_argument('--num_restarts', type=int, default=10,
+    parser.add_argument('--n_restarts', type=int, 
                         help="Number of restarts of the optimizer")
-    parser.add_argument('--raw_samples', type=int, default=1000,
+    parser.add_argument('--raw_samples', type=int, 
                         help="number of raw samples to generate before choosing the candidates")
-    parser.add_argument('--optimizer', default='optimize_acqf', 
-                        choices=list(OPTIMIZERS),
+    parser.add_argument('--optimizer', choices=list(OPTIMIZERS), 
                         help="optimizer to choose the candidates")
     parser.add_argument('--verbose', action='store_true')
 
@@ -46,14 +44,16 @@ def main(args):
 
     # problem initialization
     config = OptimizationConfig( 
-        data_needed['output'], 
-        data_needed['input'], 
-        objective,
-        args.n_candidates, 
+        objective_metrics=data_needed['output'], 
+        optimization_parameters=data_needed['input'], 
+        objective=objective,
+        n_candidates=args.n_candidates,
+        n_restarts=args.n_restarts,
+        raw_samples=args.raw_samples,
         verbose=args.verbose,
         optimizers=args.optimizer
     )
-
+    config._details()
     if config.verbose:
         print(f"Working data with {objective.value} objective:\nINPUT:")
         visualize_data(X_data, config.optimization_parameters)
@@ -81,8 +81,6 @@ def main(args):
     results = bo_loop(
         config, model, X_normalized.shape[1], Y_standardized, bounds_manager
     )
-
-    print(results.keys())
     
     fig = []
     for k, v in results.items():

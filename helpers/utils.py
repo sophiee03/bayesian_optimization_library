@@ -20,4 +20,4 @@ def print_params():
     print(f" {p} " for p in VALID_PARAMETERS)
 
 def print_metrics():
-    print([f" {k} " for k,m in METRICS.items()])
+    print([f" {k} " for k in METRICS.keys()])

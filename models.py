@@ -26,5 +26,6 @@ def train_model(config: OptimizationConfig, X_normalized: torch.Tensor, Y_standa
         
         fit_gpytorch_mll(mll)
 
-    logger.info(f"   -> Model created and trained               [{timer.get_opt_time('model_training'):.4f}s]")
+    if config.verbose:
+        logger.info(f"   -> Model created and trained               [{timer.get_opt_time('model_training'):.4f}s]")
     return model

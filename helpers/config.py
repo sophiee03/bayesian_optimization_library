@@ -24,7 +24,14 @@ PRECISIONS = {
     'MODEL_SIZE': '',
     'emissions': '.6f',
     'accuracy': '.6f',
-    'power_consumption': '.6f'
+    'cpu_energy': '.4f',
+    'cpu_power': '.4f',
+    'emissions_rate': '.4f',
+    'energy_consumed': '.4f',
+    'gpu_energy': '.4f',
+    'gpu_power': '.4f',
+    'ram_energy': '.4f',
+    'ram_power': '.4f'
 }
 
 METRICS = {
@@ -37,7 +44,14 @@ METRICS = {
     #_________________________
     'emissions': 'MIN',
     'accuracy': 'MAX',
-    'power_consumption': 'MIN'
+    'cpu_energy': 'MIN',
+    'cpu_power': 'MIN',
+    'emissions_rate': 'MIN',
+    'energy_consumed': 'MIN',
+    'gpu_energy': 'MIN',
+    'gpu_power': 'MIN',
+    'ram_energy': 'MIN',
+    'ram_power': 'MIN'
 }
 
 VALID_PARAMETERS = ['param_lr', 'param_epochs', 'param_batch_size', 'param_seed', 'EPOCHS', 'BATCH_SIZE', 'MODEL_SIZE', 'DROPOUT_RATE', 'LR']
@@ -69,8 +83,8 @@ class  OptimizationConfig:
     n_restarts: int = 10
     raw_samples: int = 500
     optimizers: str = 'optimize_acqf optimize_acqf_cyclic batch_init_cond'
-    multi_model: str = 'modellistgp'
-    verbose: bool = True
+    multi_model: str = None
+    verbose: bool = False
 
     def __post_init__(self):
         '''validate configuration after initialization'''
@@ -78,6 +92,9 @@ class  OptimizationConfig:
             value = getattr(self, f.name)
             if value is None:
                 setattr(self, f.name, f.default)
+
+        if self.multi_model is not None and self.objective == Objective.SINGLE:
+            raise ValueError(f"you have provided a --multi_model attribute but objective is single")
 
         if self.objective not in Objective:
             raise ValueError(f"objective must be single or multi")

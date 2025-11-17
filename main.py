@@ -3,9 +3,9 @@ import traceback, warnings, torch, argparse
 import matplotlib.pyplot as plt
 from helpers.logger import setup_console_logger
 from models import train_model
-from helpers.config import OptimizationConfig,BoundsGenerator, METRICS, VALID_PARAMETERS, OPTIMIZERS
+from helpers.config import OptimizationConfig, Objective, BoundsGenerator, METRICS, VALID_PARAMETERS, OPTIMIZERS
 from data_loader import load_data
-from helpers.plot import plot_data
+from helpers.plot import plot_data, plot_all
 from helpers.utils import visualize_data
 from helpers.processing import normalize_val, denormalize_val
 
@@ -42,13 +42,12 @@ def main(args):
         'output': metrics,
         'input': parameters
     }
-    X_data, Y_data, objective = load_data(args.folder, data_needed)
 
     # problem initialization
     config = OptimizationConfig( 
         objective_metrics=data_needed['output'], 
         optimization_parameters=data_needed['input'], 
-        objective=objective,
+        objective=Objective.SINGLE if len(data_needed['output']) == 1 else Objective.MULTI,
         n_candidates=args.n_candidates,
         n_restarts=args.n_restarts,
         raw_samples=args.raw_samples,
@@ -57,25 +56,28 @@ def main(args):
         multi_model = args.multi_model
     )
 
-    if config.verbose:
-        print(f"Working data with {objective.value} objective:\nINPUT:")
-        visualize_data(X_data, config.optimization_parameters)
-        print("OUTPUT:")
-        visualize_data(Y_data, config.objective_metrics)
+    X_data, Y_data = load_data(config, args.folder, data_needed)
+
+    #if config.verbose:
+    #   logger.info(f"Working data with {config.objective.value} objective:\nINPUT:")
+    #   visualize_data(X_data, config.optimization_parameters)
+    #   logger.info("OUTPUT:")
+    #   visualize_data(Y_data, config.objective_metrics)
 
     # normalize parameters and standardize metrics with their bounds
     bounds_manager = BoundsGenerator()
     original_bounds = bounds_manager.generate_bounds(X_data).to(dtype=torch.float64)
-    if config.verbose:
-        print(f"\nBounds Generated:")
-        visualize_data(original_bounds, config.optimization_parameters)
 
-    X_normalized, Y_standardized = normalize_val(X_data, Y_data, original_bounds)
-    if config.verbose:
-        print(f"\nNormalized data: \n INPUT:")
-        visualize_data(X_normalized, config.optimization_parameters)
-        print("OUTPUT:")
-        visualize_data(Y_standardized, config.objective_metrics)
+    #if config.verbose:
+    #   logger.info(f"\nBounds Generated:")
+    #   visualize_data(original_bounds, config.optimization_parameters)
+
+    X_normalized, Y_standardized = normalize_val(config, X_data, Y_data, original_bounds)
+    #if config.verbose:
+    #   logger.info(f"\nNormalized data: \n INPUT:")
+    #   visualize_data(X_normalized, config.optimization_parameters)
+    #   logger.info("OUTPUT:")
+    #   visualize_data(Y_standardized, config.objective_metrics)
 
     # training model
     model = train_model(config, X_normalized, Y_standardized)
@@ -85,25 +87,31 @@ def main(args):
         config, model, X_normalized.shape[1], Y_standardized, bounds_manager
     )
     
-    fig = []
-    for k, v in results.items():
+    # return data unnormalized
+    final_results = {}
+    for k, tuple in results.items():
         if k not in config.optimizers.split(' '):
-            continue
-
-        (candidates, acq_val), elapsed_time = v
-
-        candidates_denorm = denormalize_val(candidates, original_bounds)
-
-        fig.append(plot_data(X_data, candidates_denorm, acq_val, k, config))
+                continue
         
-        print(f'='*60)
-        print(f"Candidates suggested with method \'{k}\'\n     -- acq_value=[{acq_val.tolist()}] \n     -- Elapsed time: {elapsed_time:.4f}s")
-        visualize_data(candidates_denorm, config.optimization_parameters)
-    
-    for f in fig:
-        f.show()
+        (candidates, acq_val), time = tuple
+        candidates_denorm = denormalize_val(candidates, original_bounds)
+        acq = acq_val.tolist()
+        if not isinstance(acq_val, list):
+            acq = [acq_val]
+        final_results[f'{k}'] = (candidates_denorm, acq), time
 
-    plt.show()
+    # if necessary print results
+    if config.verbose:
+        for k, v in results.items():
+            (candidates, acq_val), elapsed_time = v
+            
+            print(f'='*60)
+            print(f"Candidates suggested with method \'{k}\'\n     -- acq_value=[{acq_val.tolist()}] \n     -- Elapsed time: {elapsed_time:.4f}s")
+            visualize_data(candidates_denorm, config.optimization_parameters)
+    
+    plot_all(X_data, final_results, config)
+
+    plt.savefig('./images/results_compared.png')
 
 if __name__ == '__main__':
     try:

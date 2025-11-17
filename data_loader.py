@@ -2,9 +2,9 @@ from etl import ProvenanceExtractor
 import torch
 import logging
 from typing import Dict
-from helpers.config import METRICS, Objective, Timer
+from helpers.config import METRICS, Objective, Timer, OptimizationConfig
 
-def load_data(data_folder: str, data_needed: Dict):
+def load_data(config: OptimizationConfig, data_folder: str, data_needed: Dict):
     '''use etl module to provide training data'''
     logger = logging.getLogger('BO')
     timer = Timer(logger)
@@ -13,7 +13,10 @@ def load_data(data_folder: str, data_needed: Dict):
         extractor = ProvenanceExtractor(data_folder, data_needed)
         inp, out = extractor.extract_all()
 
-    logger.info(f"   -> Retrieved experiment data               [{timer.get_opt_time('data_loading'):.4f}s]")
+    if config.verbose:
+        logger.info(f"   -> Retrieved experiment data               [{timer.get_opt_time('data_loading'):.4f}s]")
+    
+    # make negative the values of the metrics to minimize
     for n,key in enumerate(data_needed['output']):
         if METRICS[key]=='MIN':
             for row in range(len(out)):
@@ -21,5 +24,5 @@ def load_data(data_folder: str, data_needed: Dict):
 
     X_ = torch.tensor(inp, dtype=torch.float64)
     Y_ = torch.tensor(out, dtype=torch.float64)
-    objective = Objective.SINGLE if Y_.shape[1] == 1 else Objective.MULTI
-    return X_, Y_, objective
+
+    return X_, Y_

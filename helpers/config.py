@@ -75,6 +75,7 @@ class  OptimizationConfig:
         - optimizers -> choice of the optimizer(s) to use
         - multi_model -> choice between modellistgp and kroneckermultitaskgp
         - verbose
+        - debug_mode -> to show all the data transformation
     '''
     objective_metrics: List[str]
     optimization_parameters: List[str]
@@ -85,6 +86,7 @@ class  OptimizationConfig:
     optimizers: str = 'optimize_acqf optimize_acqf_cyclic batch_init_cond'
     multi_model: str = None
     verbose: bool = False
+    debug_mode: bool = False
 
     def __post_init__(self):
         '''validate configuration after initialization'''

@@ -28,6 +28,7 @@ def parse_arg():
     parser.add_argument('--optimizer', choices=list(OPTIMIZERS), 
                         help="optimizer to choose the candidates")
     parser.add_argument('--verbose', action='store_true')
+    parser.add_argument('--debug_mode', action='store_true')
 
     return parser.parse_args()
 
@@ -51,33 +52,34 @@ def main(args):
         n_candidates=args.n_candidates,
         n_restarts=args.n_restarts,
         raw_samples=args.raw_samples,
-        verbose=args.verbose,
         optimizers=args.optimizer,
-        multi_model = args.multi_model
+        multi_model = args.multi_model,
+        verbose=args.verbose,
+        debug_mode=args.debug_mode
     )
 
     X_data, Y_data = load_data(config, args.folder, data_needed)
 
-    #if config.verbose:
-    #   logger.info(f"Working data with {config.objective.value} objective:\nINPUT:")
-    #   visualize_data(X_data, config.optimization_parameters)
-    #   logger.info("OUTPUT:")
-    #   visualize_data(Y_data, config.objective_metrics)
+    if config.debug_mode:
+        logger.info(f"Working data with {config.objective.value} objective:\nINPUT:")
+        visualize_data(X_data, config.optimization_parameters)
+        logger.info("OUTPUT:")
+        visualize_data(Y_data, config.objective_metrics)
 
     # normalize parameters and standardize metrics with their bounds
     bounds_manager = BoundsGenerator()
     original_bounds = bounds_manager.generate_bounds(X_data).to(dtype=torch.float64)
 
-    #if config.verbose:
-    #   logger.info(f"\nBounds Generated:")
-    #   visualize_data(original_bounds, config.optimization_parameters)
+    if config.debug_mode:
+        logger.info(f"\nBounds Generated:")
+        visualize_data(original_bounds, config.optimization_parameters)
 
     X_normalized, Y_standardized = normalize_val(config, X_data, Y_data, original_bounds)
-    #if config.verbose:
-    #   logger.info(f"\nNormalized data: \n INPUT:")
-    #   visualize_data(X_normalized, config.optimization_parameters)
-    #   logger.info("OUTPUT:")
-    #   visualize_data(Y_standardized, config.objective_metrics)
+    if config.debug_mode:
+        logger.info(f"\nNormalized data: \n INPUT:")
+        visualize_data(X_normalized, config.optimization_parameters)
+        logger.info("OUTPUT:")
+        visualize_data(Y_standardized, config.objective_metrics)
 
     # training model
     model = train_model(config, X_normalized, Y_standardized)
@@ -100,7 +102,6 @@ def main(args):
             acq = [acq_val]
         final_results[f'{k}'] = (candidates_denorm, acq), time
 
-    # if necessary print results
     if config.verbose:
         for k, v in results.items():
             (candidates, acq_val), elapsed_time = v
@@ -110,8 +111,7 @@ def main(args):
             visualize_data(candidates_denorm, config.optimization_parameters)
     
     plot_all(X_data, final_results, config)
-
-    plt.savefig('./images/results_compared.png')
+    plt.show()
 
 if __name__ == '__main__':
     try:

@@ -15,7 +15,16 @@ PRECISIONS = {
     'disk_usage': '.4f',
     'memory_usage': '.4f',
     'MSE_train': '.6f',
-    'MSE_val': '.6f'
+    'MSE_val': '.6f',
+    #_________________________
+    'EPOCHS': '.1f',
+    'LR': '.6f',
+    'BATCH_SIZE': '.1f',
+    'DROPOUT_RATE': '.2f',
+    'MODEL_SIZE': '',
+    'emissions': '.6f',
+    'accuracy': '.6f',
+    'power_consumption': '.6f'
 }
 
 METRICS = {
@@ -24,10 +33,14 @@ METRICS = {
     'MSE_train': 'MIN', 
     'MSE_val': 'MIN',
     'disk_usage': 'MIN', 
-    'memory_usage': 'MIN'
+    'memory_usage': 'MIN',
+    #_________________________
+    'emissions': 'MIN',
+    'accuracy': 'MAX',
+    'power_consumption': 'MIN'
 }
 
-VALID_PARAMETERS = ['param_lr', 'param_epochs', 'param_batch_size', 'param_seed']
+VALID_PARAMETERS = ['param_lr', 'param_epochs', 'param_batch_size', 'param_seed', 'EPOCHS', 'BATCH_SIZE', 'MODEL_SIZE', 'DROPOUT_RATE', 'LR']
 
 OPTIMIZERS = ['optimize_acqf', 'batch_init_cond', 'optimize_acqf_cyclic', 'optimize_acqf optimize_acqf_cyclic batch_init_cond']
 

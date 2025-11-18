@@ -1,7 +1,7 @@
 from typing import List
 import torch
 from tabulate import tabulate
-from .config import METRICS, VALID_PARAMETERS, PRECISIONS
+from .config import ATTRIBUTES
 
 def visualize_data(d: torch.Tensor, headers: List=None):
     '''function to print data'''
@@ -13,11 +13,5 @@ def set_precisions(x_names: List[str]):
     '''defines the precision for the output format'''
     prec = []
     for x in x_names:
-        prec.append(PRECISIONS[f'{x}'])
+        prec.append(ATTRIBUTES[f'{x}'][1])
     return prec
-
-def print_params():
-    print(f" {p} " for p in VALID_PARAMETERS)
-
-def print_metrics():
-    print([f" {k} " for k in METRICS.keys()])

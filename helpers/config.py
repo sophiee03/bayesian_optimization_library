@@ -5,56 +5,27 @@ from functools import wraps
 import torch, logging, time
 from contextlib import contextmanager
 
-PRECISIONS = {
-    'param_lr': '.6f',
-    'param_epochs': '.1f',
-    'param_batch_size': '.1f',
-    'param_seed': '.1f',
-    'ACC_val': '.6f',
-    'cpu_usage': '.4f',
-    'disk_usage': '.4f',
-    'memory_usage': '.4f',
-    'MSE_train': '.6f',
-    'MSE_val': '.6f',
-    #_________________________
-    'EPOCHS': '.1f',
-    'LR': '.6f',
-    'BATCH_SIZE': '.1f',
-    'DROPOUT_RATE': '.2f',
-    'MODEL_SIZE': '',
-    'emissions': '.6f',
-    'accuracy': '.6f',
-    'cpu_energy': '.4f',
-    'cpu_power': '.4f',
-    'emissions_rate': '.4f',
-    'energy_consumed': '.4f',
-    'gpu_energy': '.4f',
-    'gpu_power': '.4f',
-    'ram_energy': '.4f',
-    'ram_power': '.4f'
-}
+class Type(Enum):
+    METRIC = 'metric',
+    PARAMETER = 'parameter'
 
-METRICS = {
-    'ACC_val': 'MAX',
-    'cpu_usage': 'MIN',
-    'MSE_train': 'MIN', 
-    'MSE_val': 'MIN',
-    'disk_usage': 'MIN', 
-    'memory_usage': 'MIN',
-    #_________________________
-    'emissions': 'MIN',
-    'accuracy': 'MAX',
-    'cpu_energy': 'MIN',
-    'cpu_power': 'MIN',
-    'emissions_rate': 'MIN',
-    'energy_consumed': 'MIN',
-    'gpu_energy': 'MIN',
-    'gpu_power': 'MIN',
-    'ram_energy': 'MIN',
-    'ram_power': 'MIN'
+ATTRIBUTES = {
+    'EPOCHS': (Type.PARAMETER, '.0f'),
+    'LR': (Type.PARAMETER, '.6f'),
+    'BATCH_SIZE': (Type.PARAMETER, '.1f'),
+    'DROPOUT_RATE': (Type.PARAMETER, '.2f'),
+    'MODEL_SIZE': (Type.PARAMETER, ''),
+    'emissions': (Type.METRIC, '.6f', 'MIN'),
+    'accuracy': (Type.METRIC, '.6f', 'MAX'),
+    'cpu_energy': (Type.METRIC, '.4f', 'MIN'),
+    'cpu_power': (Type.METRIC, '.4f', 'MIN'),
+    'emissions_rate': (Type.METRIC, '.4f', 'MIN'),
+    'energy_consumed': (Type.METRIC, '.4f', 'MIN'),
+    'gpu_energy': (Type.METRIC, '.4f', 'MIN'),
+    'gpu_power': (Type.METRIC, '.4f', 'MIN'),
+    'ram_energy': (Type.METRIC, '.4f', 'MIN'),
+    'ram_power': (Type.METRIC, '.4f', 'MIN')
 }
-
-VALID_PARAMETERS = ['param_lr', 'param_epochs', 'param_batch_size', 'param_seed', 'EPOCHS', 'BATCH_SIZE', 'MODEL_SIZE', 'DROPOUT_RATE', 'LR']
 
 OPTIMIZERS = ['optimize_acqf', 'batch_init_cond', 'optimize_acqf_cyclic', 'optimize_acqf optimize_acqf_cyclic batch_init_cond']
 
@@ -75,7 +46,7 @@ class  OptimizationConfig:
         - optimizers -> choice of the optimizer(s) to use
         - multi_model -> choice between modellistgp and kroneckermultitaskgp
         - verbose
-        - debug_mode -> to show all the data transformation
+        - default
     '''
     objective_metrics: List[str]
     optimization_parameters: List[str]
@@ -86,7 +57,7 @@ class  OptimizationConfig:
     optimizers: str = 'optimize_acqf optimize_acqf_cyclic batch_init_cond'
     multi_model: str = None
     verbose: bool = False
-    debug_mode: bool = False
+    default: bool = False
 
     def __post_init__(self):
         '''validate configuration after initialization'''
@@ -96,7 +67,7 @@ class  OptimizationConfig:
                 setattr(self, f.name, f.default)
 
         if self.multi_model is not None and self.objective == Objective.SINGLE:
-            raise ValueError(f"you have provided a --multi_model attribute but objective is single")
+            raise ValueError(f"you have provided a --multi_model value but objective is single")
 
         if self.objective not in Objective:
             raise ValueError(f"objective must be single or multi")

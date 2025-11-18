@@ -2,7 +2,7 @@ from etl import ProvenanceExtractor
 import torch
 import logging
 from typing import Dict
-from helpers.config import METRICS, Objective, Timer, OptimizationConfig
+from helpers.config import ATTRIBUTES, Timer, OptimizationConfig
 
 def load_data(config: OptimizationConfig, data_folder: str, data_needed: Dict):
     '''use etl module to provide training data'''
@@ -18,7 +18,7 @@ def load_data(config: OptimizationConfig, data_folder: str, data_needed: Dict):
     
     # make negative the values of the metrics to minimize
     for n,key in enumerate(data_needed['output']):
-        if METRICS[key]=='MIN':
+        if ATTRIBUTES[key][2]=='MIN':
             for row in range(len(out)):
                 out[row][n] = -out[row][n]
 

@@ -4,6 +4,27 @@ import numpy as np
 from typing import Dict
 from .config import OptimizationConfig
 
+def handle_acqv(a):
+    if isinstance(a, list):
+        result = []
+        for item in a:
+            if isinstance(item, (torch.Tensor, np.ndarray)):
+                result.extend(handle_acqv(item))
+            else:
+                result.append(float(item))
+        return result
+    
+    # Tensor 
+    if isinstance(a, torch.Tensor):
+        return a.detach().cpu().tolist() if a.numel() > 1 else [a.detach().cpu().item()]
+    
+    # Array 
+    if isinstance(a, np.ndarray):
+        return a.tolist() if a.size > 1 else [float(a)]
+    
+    # Scalar
+    return [float(a)]
+
 def plot_data(train: torch.Tensor, result: torch.Tensor, acqv: float | torch.Tensor, opt_name: str, config: OptimizationConfig):
     '''plotting results (only 2 parameters for simplicity)'''
     fig, ax = plt.subplots()
@@ -35,24 +56,25 @@ def plot_all(train_data: torch.Tensor, results: Dict, config: OptimizationConfig
     '''plotting results (only 2 parameters for simplicity)'''
     fig, ax = plt.subplots()
 
-    train_x = train_data[:, 0]
-    train_y = train_data[:, 1]
-    ax.scatter(train_x, train_y, c="blue", alpha=0.6, label="Training")
+    ax.scatter(train_data[:,0], train_data[:,1], c="blue", alpha=0.6, label="Training")
 
     colors = plt.cm.tab10(np.linspace(0, 1, len(results)))
 
+    lines = []
     for (color, (name, entry)) in zip(colors, results.items()):
         (candidates, acq_val), _ = entry
 
-        x = candidates[:, 0]
-        y = candidates[:, 1]
-
+        acq_list = handle_acqv(acq_val)
+        acq_str = ', '.join([f"{val:.4f}" for val in acq_list])
+        lines.append(f'{name} - acq_val: [{acq_str}]')
+        
         # Scatter
-        ax.scatter(x, y, c=[color], label=name, alpha=0.8)
+        ax.scatter(candidates[:,0], candidates[:,1], c=[color], label=name, alpha=0.8)
 
     ax.set_xlabel(config.optimization_parameters[0])
     ax.set_ylabel(config.optimization_parameters[1])
-    ax.set_title("Training + Optimization results")
+
+    ax.set_title(f"Candidates: \n"+"\n".join(lines))
 
     ax.legend()
     plt.tight_layout()

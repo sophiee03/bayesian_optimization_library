@@ -61,6 +61,7 @@ def main(args):
     X_data, Y_data = load_data(config, args.folder, data_needed)
 
     if config.debug_mode:
+        config._details()
         logger.info(f"Working data with {config.objective.value} objective:\nINPUT:")
         visualize_data(X_data, config.optimization_parameters)
         logger.info("OUTPUT:")

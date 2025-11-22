@@ -17,3 +17,9 @@ CUSTOMIZED EXECUTION: it is possible to customize these attributes:
       --verbose (to see workflow and timings)
 
 NB: the etl module is a submodule so it is necessary to install it 
+
+# INSTALL AND USE THE LIBRARY
+1. Clone the repositoy
+2. Upload the submodule (git submodule update --init --recursive)
+3. Choose among the 2 execution option
+   NB: it is necessary to select the folder of the training dataset

@@ -5,7 +5,10 @@ from .config import ATTRIBUTES
 
 def visualize_data(d: torch.Tensor, headers: List=None):
     '''function to print data'''
-    data = d.cpu().numpy().tolist()
+    if isinstance(d, torch.Tensor):
+        data = d.cpu().numpy().tolist()
+    else:
+        data = d
     prec=set_precisions(headers)
     print(tabulate(data, headers=headers, floatfmt=prec, tablefmt="grid"))
         

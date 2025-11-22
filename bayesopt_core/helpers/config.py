@@ -13,7 +13,7 @@ ATTRIBUTES = {
     'EPOCHS': (Type.PARAMETER, '.0f'),
     'LR': (Type.PARAMETER, '.6f'),
     'BATCH_SIZE': (Type.PARAMETER, '.0f'),
-    'DROPOUT_RATE': (Type.PARAMETER, '.2f'),
+    'DROPOUT': (Type.PARAMETER, '.2f'),
     'MODEL_SIZE': (Type.PARAMETER, ''),
     'emissions': (Type.METRIC, '.6f', 'MIN'),
     'accuracy': (Type.METRIC, '.6f', 'MAX'),

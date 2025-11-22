@@ -67,7 +67,7 @@ def main(args):
             objective_metrics = data_needed['output'],
             optimization_parameters = data_needed['input'],
             objective = Objective.MULTI,
-            n_candidates=3,
+            n_candidates=1,
             n_restarts=10,
             raw_samples=200,
             optimizers='optimize_acqf',
@@ -88,31 +88,27 @@ def main(args):
     # generate candidates
     results = bo_loop(config, model, X_normalized, Y_standardized, bounds_manager)
     
-    # format outputs
-    denormalized_results = {}
     final_results = {
         'configuration': config.return_dict(),
         'candidates': []
     }
-    for k, tuple in results.items():
-        if k not in config.optimizers.split(' '):
+
+    for optimizer, result in results.items():
+        if optimizer not in config.optimizers.split(' '):
             continue
-        
-        (candidates, acq_val), time = tuple
+
+        ((candidates, acq_val), elapsed_time) = result
+
         candidates_denorm = denormalize_val(candidates, original_bounds)
-        acq = acq_val.tolist()
-        if not isinstance(acq_val, list):
-            acq = [acq_val]
-        denormalized_results[f'{k}'] = (candidates_denorm, acq), time
+        acq_values = acq_val if isinstance(acq_val, list) else [acq_val]
+
         final_results['candidates'].append(candidates_denorm)
 
-    if config.verbose:
-        for k, v in denormalized_results.items():
-            (candidates, acq_val), elapsed_time = v
+        if config.verbose:
             print(f'='*60)
-            print(f"Candidates suggested with method \'{k}\'\n     -- acq_value=[{acq_val}] \n     -- Elapsed time: {elapsed_time:.4f}s")
-            visualize_data(candidates, config.optimization_parameters)
-    
+            print(f"Candidates suggested with method \'{optimizer}\'\n     -- acq_value=[{acq_values}] \n     -- Elapsed time: {elapsed_time:.4f}s")
+            visualize_data(candidates_denorm, config.optimization_parameters)
+
     #plot_all(X_data, final_results, config)
     #plt.show()
     print(json.dumps(final_results))

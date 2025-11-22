@@ -1,32 +1,48 @@
 import torch, logging
-from helpers.config import Objective, OptimizationConfig, Timer, OPTIMIZERS
-from botorch.acquisition import qLogExpectedImprovement
+from helpers.config import Objective, OptimizationConfig, Timer, OPTIMIZERS, BoundsGenerator
+from botorch.acquisition import qLogExpectedImprovement, qUpperConfidenceBound
 from botorch.acquisition.multi_objective.logei import qLogExpectedHypervolumeImprovement, qLogNoisyExpectedHypervolumeImprovement
-from botorch.acquisition.multi_objective.parego import qLogNParEGO
 from botorch.utils.multi_objective.box_decompositions.non_dominated import FastNondominatedPartitioning
 from botorch.optim import optimize_acqf, optimize_acqf_cyclic
 from botorch.optim.initializers import gen_batch_initial_conditions
-from helpers.config import BoundsGenerator
+from botorch.acquisition.objective import ScalarizedPosteriorTransform
 
 logger = logging.getLogger('BO')
 timer = Timer(logger)
 
 def generate_acqf(config: OptimizationConfig, model, X: torch.Tensor, Y: torch.Tensor):
-    '''bayesian optimization routine that provides the n candidates required with its acquisition_value'''
+    '''function to generate the acquisition function for single or multi objective'''
     if config.objective == Objective.SINGLE:
         acq = qLogExpectedImprovement(
-            model = model,
-            best_f = Y.max()
+            model=model, 
+            best_f=Y.max()
         )
     else:
-        ref_point = Y.min(dim=0)[0] - 0.1 * (Y.max(dim=0)[0] - Y.min(dim=0)[0])
-        partitioning = FastNondominatedPartitioning(ref_point, Y)
-        ref_point = ref_point.tolist()
-        acq = qLogExpectedHypervolumeImprovement(
-            model=model,
-            ref_point=ref_point,
-            partitioning=partitioning
+    # FOR QLogEHVI
+    #    ref_point = Y.min(dim=0)[0] - 0.1 * (Y.max(dim=0)[0] - Y.min(dim=0)[0])
+    #    partitioning = FastNondominatedPartitioning(ref_point, Y)
+    #    ref_point = ref_point.tolist()
+    #    acq = qLogExpectedHypervolumeImprovement(
+    #        model=model,
+    #        ref_point=ref_point,
+    #        partitioning=partitioning
+    #    )
+    # FOR QLogEI
+        weights = torch.ones(len(config.objective_metrics), dtype=torch.float64) / len(config.objective_metrics)
+        posterior_transform = ScalarizedPosteriorTransform(weights=weights)
+        acq = qLogExpectedImprovement(
+            model=model, 
+            best_f=Y.max(),
+            posterior_transform=posterior_transform
         )
+    # FOR UCB
+    #    weights = torch.ones(len(config.objective_metrics), dtype=torch.float64) / len(config.objective_metrics)
+    #    posterior_transform = ScalarizedPosteriorTransform(weights=weights)
+    #    acq = qUpperConfidenceBound(
+    #        model=model,
+    #        beta=2,
+    #        posterior_transform=posterior_transform
+    #    )
     return acq
 
 @timer.time_function('optimize_acqf')
@@ -78,6 +94,15 @@ def batch_init_cond_optim(acqf, bm: BoundsGenerator, dim: int, conf: Optimizatio
     return candidates, acq_value
 
 def bo_loop(config: OptimizationConfig, model, X, Y, bm: BoundsGenerator):
+    '''
+        generate the acquisition function and find candidates with their acq_values
+        returns:
+            Dict{
+                'optimize_acqf': (candidate, acq_value), time,
+                'optimize_acqf_cyclic': (candidate, acq_value), time,
+                'batch_init_cond': (candidate, acq_value), time
+            }
+    '''
     with timer.measure('acquisition_function'):
         acqf = generate_acqf(config, model,X, Y)
     

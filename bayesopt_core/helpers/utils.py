@@ -7,11 +7,12 @@ def visualize_data(d: torch.Tensor, headers: List=None):
     '''function to print data'''
     data = d.cpu().numpy().tolist()
     prec=set_precisions(headers)
-    print(tabulate(data, headers=headers, floatfmt=prec, tablefmt="fancy_grid"))
+    print(tabulate(data, headers=headers, floatfmt=prec, tablefmt="grid"))
         
 def set_precisions(x_names: List[str]):
     '''defines the precision for the output format'''
     prec = []
     for x in x_names:
         prec.append(ATTRIBUTES[f'{x}'][1])
+
     return prec

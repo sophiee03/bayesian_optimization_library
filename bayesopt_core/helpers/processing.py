@@ -4,12 +4,11 @@ from .config import Timer, OptimizationConfig
 from botorch.utils.transforms import normalize, standardize, unnormalize
 
 def normalize_val(config: OptimizationConfig, x: torch.Tensor, y: torch.Tensor, bounds: torch.Tensor):
-    '''function to normalize and standardize data'''
-    # Here we trust that etl module returned no NaN values 
-    
+    '''function to normalize and standardize data''' 
     logger = logging.getLogger('BO')
     timer = Timer(logger)
 
+    # Here we trust that etl module returned no NaN values
     with timer.measure('normalization/standardization'):
         X_norm = normalize(x, bounds)
         
@@ -25,10 +24,25 @@ def normalize_val(config: OptimizationConfig, x: torch.Tensor, y: torch.Tensor, 
             Y_stand = (standardize(y))
             if Y_stand.dim == 1:
                 Y_stand = Y_stand.unsqueeze(-1)
+
     if config.verbose:
         logger.info(f"   -> Data normalized and standardized        [{timer.get_opt_time('normalization/standardization'):.4f}s]")
+    
     return X_norm, Y_stand
 
 def denormalize_val(candidates: torch.Tensor, bounds: torch.Tensor) -> torch.Tensor:
-    '''function to denormalize data to the original bounds'''
-    return unnormalize(candidates, bounds)
+    '''function to denormalize data to the original bounds and handle modelsize generated'''
+    cand_denormalized = unnormalize(candidates, bounds).tolist()
+    for n,r in enumerate(cand_denormalized):
+        cand_denormalized[n][4] = str(handle_modelsize(r[4]))
+    
+    return cand_denormalized
+
+def handle_modelsize(n: float):
+    '''function to transform the modelsize value generated into the relative string'''
+    if n <= 3700506.0:      #small
+        return 'small'
+    elif n <= 9853386.0:    #medium
+        return 'medium'
+    else:                   #large
+        return 'large'

@@ -1,4 +1,3 @@
 [submodule "bayesopt_core/etl"]
 	path = bayesopt_core/etl
 	url = https://github.com/SecondarySkyler/etl
-	branch = parse_v2

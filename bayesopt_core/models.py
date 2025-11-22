@@ -7,7 +7,7 @@ from gpytorch.mlls.sum_marginal_log_likelihood import SumMarginalLogLikelihood
 from botorch import fit_gpytorch_mll
 
 def train_model(config: OptimizationConfig, X_normalized: torch.Tensor, Y_standardized: torch.Tensor):
-    '''train the model with the required number of tasks'''
+    '''train the model with the normalized training set'''
     logger = logging.getLogger('BO')
     timer = Timer(logger)
 

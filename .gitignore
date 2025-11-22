@@ -1,4 +1,7 @@
 prov/
 prov2/
 images/
+test/
+data/
+yProvML/
 __pycache__

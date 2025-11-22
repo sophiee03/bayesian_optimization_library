@@ -1,17 +1,17 @@
 from bo_loop import bo_loop
-import traceback, warnings, torch, argparse
+import traceback, warnings, torch, argparse, json, sys
 import matplotlib.pyplot as plt
 from helpers.logger import setup_console_logger
 from models import train_model
 from helpers.config import OptimizationConfig, Objective, BoundsGenerator, ATTRIBUTES, OPTIMIZERS
 from data_loader import load_data
-from helpers.plot import plot_data, plot_all
+from helpers.plot import plot_data, plot_all, plot_outputs
 from helpers.utils import visualize_data
 from helpers.processing import normalize_val, denormalize_val
 
 def parse_arg():
     parser = argparse.ArgumentParser(description = "Bayesian Optimization with BoTorch")
-    parser.add_argument('--folder', type=str, default='./prov2', 
+    parser.add_argument('--folder', type=str, default='../test/prov', 
                         help="Folder to extract training data")
     parser.add_argument('--output', nargs='+', type=str, choices=list(ATTRIBUTES.keys()),
                         help="Metrics to maximize/minimize")
@@ -35,6 +35,7 @@ def parse_arg():
 def main(args):
     logger = setup_console_logger()
 
+    # CUSTOMIZED EXECUTION
     if not args.default:
         metrics = args.output
         parameters = args.input
@@ -55,10 +56,12 @@ def main(args):
             multi_model = args.multi_model,
             verbose=args.verbose,
         )
+
+    # DEFAULT EXECUTION
     else:
         data_needed = {
             'output': ['accuracy', 'emissions'],
-            'input': ['LR', 'BATCH_SIZE', 'DROPOUT_RATE', 'EPOCHS']
+            'input': ['DROPOUT', 'BATCH_SIZE', 'EPOCHS', 'LR', 'MODEL_SIZE']
         }
         config = OptimizationConfig(
             objective_metrics = data_needed['output'],
@@ -71,6 +74,7 @@ def main(args):
             multi_model='modellistgp'
         )
 
+    # retrieve data from the training set with ETL module
     X_data, Y_data = load_data(config, args.folder, data_needed)
 
     bounds_manager = BoundsGenerator()
@@ -78,11 +82,18 @@ def main(args):
 
     X_normalized, Y_standardized = normalize_val(config, X_data, Y_data, original_bounds)
 
+    # build and fit the model
     model = train_model(config, X_normalized, Y_standardized)
 
+    # generate candidates
     results = bo_loop(config, model, X_normalized, Y_standardized, bounds_manager)
     
-    final_results = {}
+    # format outputs
+    denormalized_results = {}
+    final_results = {
+        'configuration': config.return_dict(),
+        'candidates': []
+    }
     for k, tuple in results.items():
         if k not in config.optimizers.split(' '):
             continue
@@ -92,17 +103,20 @@ def main(args):
         acq = acq_val.tolist()
         if not isinstance(acq_val, list):
             acq = [acq_val]
-        final_results[f'{k}'] = (candidates_denorm, acq), time
+        denormalized_results[f'{k}'] = (candidates_denorm, acq), time
+        final_results['candidates'].append(candidates_denorm)
 
     if config.verbose:
-        for k, v in results.items():
+        for k, v in denormalized_results.items():
             (candidates, acq_val), elapsed_time = v
             print(f'='*60)
-            print(f"Candidates suggested with method \'{k}\'\n     -- acq_value=[{acq_val.tolist()}] \n     -- Elapsed time: {elapsed_time:.4f}s")
-            visualize_data(candidates_denorm, config.optimization_parameters)
+            print(f"Candidates suggested with method \'{k}\'\n     -- acq_value=[{acq_val}] \n     -- Elapsed time: {elapsed_time:.4f}s")
+            visualize_data(candidates, config.optimization_parameters)
     
-    plot_all(X_data, final_results, config)
-    plt.show()
+    #plot_all(X_data, final_results, config)
+    #plt.show()
+    print(json.dumps(final_results))
+    sys.stdout.flush()
 
 if __name__ == '__main__':
     try:
@@ -112,6 +126,6 @@ if __name__ == '__main__':
         main(args)
     except Exception as e:
         print(f"An Error Occured:")
-        print(f"   → {type(e).__name__}: {e}")
+        print(f"   -> {type(e).__name__}: {e}")
         print("\nError details:")
         traceback.print_exc()

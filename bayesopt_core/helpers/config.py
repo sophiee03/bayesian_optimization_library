@@ -12,7 +12,7 @@ class Type(Enum):
 ATTRIBUTES = {
     'EPOCHS': (Type.PARAMETER, '.0f'),
     'LR': (Type.PARAMETER, '.6f'),
-    'BATCH_SIZE': (Type.PARAMETER, '.1f'),
+    'BATCH_SIZE': (Type.PARAMETER, '.0f'),
     'DROPOUT_RATE': (Type.PARAMETER, '.2f'),
     'MODEL_SIZE': (Type.PARAMETER, ''),
     'emissions': (Type.METRIC, '.6f', 'MIN'),
@@ -37,9 +37,9 @@ class Objective(Enum):
 class  OptimizationConfig:
     '''
     Configuration choices:
-        - obj_metrics -> list of metrics to maximize (str)
+        - obj_metrics -> list of metrics to maximize
         - optimization_parameters -> list of parameters to optimize
-        - objective -> number of parameters we want to maximize/minimize
+        - objective -> number of metrics we want to maximize/minimize
         - n_candidates -> number of candidates the bo_loop will return
         - n_restarts -> number of restarts for the optimization routine
         - raw_samples -> number of random samples when initializing the optimization
@@ -83,10 +83,6 @@ class  OptimizationConfig:
         
         if self.optimizers is None or self.optimizers not in OPTIMIZERS:
             raise ValueError(f"optimizer not recognized: {self.optimizers}")
-
-    def _objective(self) -> Objective:
-        '''returns how many tasks we are executing'''
-        return self.objective
     
     def _details(self):
         '''print a summary of the configuration choices adopted'''
@@ -100,9 +96,25 @@ class  OptimizationConfig:
         print(f"    -> n_restarts: {self.n_restarts}    raw_samples: {self.raw_samples}")
         print(f"{'-'*60}")
     
+    def return_dict(self):
+        '''generate a dictionary of the configuration attributes'''
+        d = {
+            'objective_metrics': self.objective_metrics,
+            'optimization_parameters': self.optimization_parameters,
+            'objective': 'SINGLE' if self.objective == Objective.SINGLE else 'MULTI',
+            'n_candidates': self.n_candidates,
+            'n_restarts': self.n_restarts,
+            'raw_samples': self.raw_samples,
+            'optimizers': self.optimizers,
+            'multi_model': self.multi_model,
+            'verbose': self.verbose,
+            'default': self.default
+        }
+        return d
+    
 @dataclass
 class BoundsGenerator():
-    '''configuration for parameter bounds needed in normalization'''
+    '''generator of parameter bounds needed in normalization'''
     margin: float = 0.02
     force_positive: bool = True
 
@@ -128,7 +140,7 @@ class BoundsGenerator():
                                 [1.0]*n], dtype=torch.float64)
     
 class Timer:
-    '''register and confront timings'''
+    '''register and compare timings'''
     def __init__(self, logger: logging.Logger = None):
         self.timings: Dict[str, float] = {}
         self.logger = logger or logging.getLogger(__name__)
@@ -171,19 +183,6 @@ class Timer:
             raise ValueError(f"Time not found for {name} optimizer")
         return self.timings[name]
 
-    def print_summary(self):
-        '''print a summary of each execution time recorded'''
-        sorted_opt = sorted(
-            self.timings.keys(),
-            key=lambda x: sum(self.timings[x]),
-            reverse=True
-        )
-        self.logger.info("=" * 60)
-        for name in sorted_opt:
-            self.logger.info(f"total elapsed time for {name} optimization:       {self.timings[name].sum():.4f}")
-        self.logger.info("=" * 60)
-
     def reset(self):
         '''clear all times registered'''
         self.timings.clear()
-

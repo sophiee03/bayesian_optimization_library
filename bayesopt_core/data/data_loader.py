@@ -1,4 +1,4 @@
-from ..etl import ProvenanceExtractor
+from .etl import ProvenanceExtractor
 import torch
 import logging
 from typing import Dict
@@ -12,6 +12,8 @@ def load_data(config: OptimizationConfig, data_folder: str, data_needed: Dict):
     with timer.measure('data_loading'):
         extractor = ProvenanceExtractor(data_folder, data_needed)
         inp, out = extractor.extract_all()
+        if inp is None or out is None:
+            raise RuntimeError("An error occured in extracting data, check the folder and its content!")
 
     if config.verbose:
         logger.info(f"   -> Retrieved experiment data               [{timer.get_opt_time('data_loading'):.4f}s]")

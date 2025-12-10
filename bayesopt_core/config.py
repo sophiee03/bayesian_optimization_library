@@ -53,7 +53,7 @@ class  OptimizationConfig:
     objective: Objective
     n_candidates: int = 1
     n_restarts: int = 10
-    raw_samples: int = 500
+    raw_samples: int = 200
     optimizers: str = OPTIMIZERS[0]
     acqf: str = ACQF[2]
     beta: float = 1.0

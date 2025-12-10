@@ -1,11 +1,11 @@
-from .data.data_loader import load_data
-from .models import train_model
-from .bo_loop import bo_loop
 from .config import OptimizationConfig
+from .config import Objective
+from .bayesian_handler import OptimizationResults
+from .bayesian_handler import BayesianOptimizer
 
 __all__ = [
-    "load_data",
-    "train_model",
-    "bo_loop",
-    "OptimizationConfig"
+    'OptimizationConfig',
+    'OptimizationResults',
+    'BayesianOptimizer',
+    'Objective'
 ]

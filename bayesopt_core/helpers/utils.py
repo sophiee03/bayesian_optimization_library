@@ -1,7 +1,7 @@
 from typing import List
 import torch
 from tabulate import tabulate
-from .config import ATTRIBUTES
+from ..config import ATTRIBUTES
 
 def visualize_data(d: torch.Tensor, headers: List=None):
     '''function to print data'''

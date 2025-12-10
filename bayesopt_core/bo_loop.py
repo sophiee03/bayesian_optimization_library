@@ -1,5 +1,5 @@
 import torch, logging
-from .helpers.config import Objective, OptimizationConfig, Timer, OPTIMIZERS, BoundsGenerator, ACQF
+from .config import Objective, OptimizationConfig, Timer, OPTIMIZERS, BoundsGenerator, ACQF
 from botorch.acquisition import qLogExpectedImprovement, qUpperConfidenceBound, qLogNoisyExpectedImprovement
 from botorch.acquisition.multi_objective.logei import qLogExpectedHypervolumeImprovement
 from botorch.utils.multi_objective.box_decompositions.non_dominated import FastNondominatedPartitioning

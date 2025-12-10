@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import torch
 import numpy as np
 from typing import Dict
-from .config import OptimizationConfig
+from ..config import OptimizationConfig
 
 def handle_acqv(a):
     '''function to handle acquisition values format'''

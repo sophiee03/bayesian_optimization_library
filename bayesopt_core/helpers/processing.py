@@ -1,6 +1,6 @@
 import torch
 import logging
-from .config import Timer, OptimizationConfig
+from ..config import Timer, OptimizationConfig
 from botorch.utils.transforms import normalize, standardize, unnormalize
 
 def normalize_val(config: OptimizationConfig, x: torch.Tensor, y: torch.Tensor, bounds: torch.Tensor):

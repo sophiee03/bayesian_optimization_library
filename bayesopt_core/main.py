@@ -2,8 +2,8 @@ from .bo_loop import bo_loop
 import traceback, warnings, torch, argparse, json, sys
 from .helpers.logger import setup_console_logger
 from .models import train_model
-from .helpers.config import OptimizationConfig, Objective, BoundsGenerator, ATTRIBUTES, OPTIMIZERS, ACQF
-from .data_loader import load_data
+from .config import OptimizationConfig, Objective, BoundsGenerator, ATTRIBUTES, OPTIMIZERS, ACQF
+from .data.data_loader import load_data
 from .helpers.utils import visualize_data
 from .helpers.processing import normalize_val, denormalize_val
 

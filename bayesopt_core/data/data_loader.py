@@ -1,8 +1,8 @@
-from .etl import ProvenanceExtractor
+from ..etl import ProvenanceExtractor
 import torch
 import logging
 from typing import Dict
-from .helpers.config import ATTRIBUTES, Timer, OptimizationConfig
+from ..config import ATTRIBUTES, Timer, OptimizationConfig
 
 def load_data(config: OptimizationConfig, data_folder: str, data_needed: Dict):
     '''use etl module to provide training data'''

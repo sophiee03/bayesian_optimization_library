@@ -1,5 +1,5 @@
 import torch, logging
-from .helpers.config import OptimizationConfig, Timer, Objective
+from .config import OptimizationConfig, Timer, Objective
 from botorch.models import SingleTaskGP, ModelListGP
 from gpytorch.mlls import ExactMarginalLogLikelihood
 from gpytorch.mlls.sum_marginal_log_likelihood import SumMarginalLogLikelihood

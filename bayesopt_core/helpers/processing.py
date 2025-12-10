@@ -30,11 +30,13 @@ def normalize_val(config: OptimizationConfig, x: torch.Tensor, y: torch.Tensor, 
     
     return X_norm, Y_stand
 
-def denormalize_val(candidates: torch.Tensor, bounds: torch.Tensor) -> torch.Tensor:
+def denormalize_val(candidates: torch.Tensor, bounds: torch.Tensor, config: OptimizationConfig) -> torch.Tensor:
     '''function to denormalize data to the original bounds and handle modelsize generated'''
     cand_denormalized = unnormalize(candidates, bounds).tolist()
     for n,r in enumerate(cand_denormalized):
-        cand_denormalized[n][4] = str(handle_modelsize(r[4]))
+        for par_n, par in enumerate(config.optimization_parameters):
+            if par == 'MODEL_SIZE':
+                cand_denormalized[n][par_n] = str(handle_modelsize(r[par_n]))
     
     return cand_denormalized
 

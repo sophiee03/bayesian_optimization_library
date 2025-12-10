@@ -27,7 +27,8 @@ ATTRIBUTES = {
     'ram_power': (Type.METRIC, '.4f', 'MIN')
 }
 
-OPTIMIZERS = ['optimize_acqf', 'batch_init_cond', 'optimize_acqf_cyclic', 'optimize_acqf optimize_acqf_cyclic batch_init_cond']
+OPTIMIZERS = ['optimize_acqf', 'batch_init_cond', 'optimize_acqf_cyclic']
+ACQF = ['qlogei', 'qlognei', 'ucb', 'qlogehvi']
 
 class Objective(Enum):
     SINGLE = "SINGLE"
@@ -35,27 +36,27 @@ class Objective(Enum):
 
 @dataclass
 class  OptimizationConfig:
-    '''
-    Configuration choices:
-        - obj_metrics -> list of metrics to maximize
-        - optimization_parameters -> list of parameters to optimize
-        - objective -> number of metrics we want to maximize/minimize
-        - n_candidates -> number of candidates the bo_loop will return
-        - n_restarts -> number of restarts for the optimization routine
-        - raw_samples -> number of random samples when initializing the optimization
-        - optimizers -> choice of the optimizer(s) to use
-        - multi_model -> choice between modellistgp and kroneckermultitaskgp
-        - verbose
-        - default
+    '''Configuration choices:
+        - objective_metrics       = list of metrics to maximize
+        - optimization_parameters = list of parameters to optimize
+        - objective               = number of metrics we want to maximize/minimize
+        - n_candidates            = number of candidates the bo_loop will return
+        - n_restarts              = number of restarts for the optimization routine
+        - raw_samples             = number of random samples when initializing the optimization
+        - optimizers              = choice of the optimizer to use
+        - acqf                    = choice of the acquisition function to use
+        - verbose                 = flag to follow BO workflow
+        - default                 = flag to adopt default condifguration
     '''
     objective_metrics: List[str]
     optimization_parameters: List[str]
-    objective: Objective = Objective.SINGLE
+    objective: Objective
     n_candidates: int = 1
     n_restarts: int = 10
     raw_samples: int = 500
-    optimizers: str = 'optimize_acqf optimize_acqf_cyclic batch_init_cond'
-    multi_model: str = None
+    optimizers: str = OPTIMIZERS[0]
+    acqf: str = ACQF[2]
+    beta: float = 1.0
     verbose: bool = False
     default: bool = False
 
@@ -65,12 +66,6 @@ class  OptimizationConfig:
             value = getattr(self, f.name)
             if value is None:
                 setattr(self, f.name, f.default)
-
-        if self.multi_model is not None and self.objective == Objective.SINGLE:
-            raise ValueError(f"you have provided a --multi_model value but objective is single")
-
-        if self.objective not in Objective:
-            raise ValueError(f"objective must be single or multi")
         
         if self.n_candidates < 1:
             raise ValueError(f"n_candidates must be at least 1")
@@ -80,12 +75,9 @@ class  OptimizationConfig:
         
         if self.raw_samples < 1:
             raise ValueError(f"raw_samples must at least be 1 \n    (it is suggested to have at least 2*d samples where d is the number of parameters)")
-        
-        if self.optimizers is None or self.optimizers not in OPTIMIZERS:
-            raise ValueError(f"optimizer not recognized: {self.optimizers}")
-    
+
     def _details(self):
-        '''print a summary of the configuration choices adopted'''
+        '''print a summary of the configuration choices'''
         print(f"{'-'*60}")
         print(f"CONFIGURATION DETAILS:")
         print(f"    executing a {self.objective} model with:")
@@ -106,15 +98,15 @@ class  OptimizationConfig:
             'n_restarts': self.n_restarts,
             'raw_samples': self.raw_samples,
             'optimizers': self.optimizers,
-            'multi_model': self.multi_model,
+            'acqf': self.acqf,
             'verbose': self.verbose,
             'default': self.default
         }
         return d
-    
+
 @dataclass
 class BoundsGenerator():
-    '''generator of parameter bounds needed in normalization'''
+    '''class to create parameter bounds needed in normalization'''
     margin: float = 0.02
     force_positive: bool = True
 
@@ -140,7 +132,7 @@ class BoundsGenerator():
                                 [1.0]*n], dtype=torch.float64)
     
 class Timer:
-    '''register and compare timings'''
+    '''class to register and observe timings'''
     def __init__(self, logger: logging.Logger = None):
         self.timings: Dict[str, float] = {}
         self.logger = logger or logging.getLogger(__name__)
@@ -178,7 +170,7 @@ class Timer:
         return decorator
 
     def get_opt_time(self, name: str) -> float:
-        '''obtain only the time measure required'''
+        '''obtain only the measured time required'''
         if name not in self.timings.keys():
             raise ValueError(f"Time not found for {name} optimizer")
         return self.timings[name]

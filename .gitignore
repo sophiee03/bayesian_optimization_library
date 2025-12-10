@@ -1,7 +1,5 @@
-prov/
-prov2/
 images/
 test/
-data/
 yProvML/
+*.egg-info/
 __pycache__

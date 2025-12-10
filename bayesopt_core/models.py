@@ -1,7 +1,6 @@
 import torch, logging
-from helpers.config import OptimizationConfig, Timer, Objective
+from .helpers.config import OptimizationConfig, Timer, Objective
 from botorch.models import SingleTaskGP, ModelListGP
-from botorch.models.multitask import KroneckerMultiTaskGP
 from gpytorch.mlls import ExactMarginalLogLikelihood
 from gpytorch.mlls.sum_marginal_log_likelihood import SumMarginalLogLikelihood
 from botorch import fit_gpytorch_mll
@@ -16,13 +15,9 @@ def train_model(config: OptimizationConfig, X_normalized: torch.Tensor, Y_standa
             model = SingleTaskGP(X_normalized, Y_standardized)
             mll = ExactMarginalLogLikelihood(model.likelihood, model)
         elif config.objective == Objective.MULTI:
-            if config.multi_model == 'kroneckermultitaskgp':
-                model = KroneckerMultiTaskGP(X_normalized, Y_standardized)
-                mll = ExactMarginalLogLikelihood(model.likelihood, model)
-            else:
-                gps = [SingleTaskGP(X_normalized, Y_standardized[:,y].unsqueeze(-1)) for y in range(Y_standardized.shape[1])]
-                model = ModelListGP(*gps)
-                mll = SumMarginalLogLikelihood(model.likelihood, model)
+            gps = [SingleTaskGP(X_normalized, Y_standardized[:,y].unsqueeze(-1)) for y in range(Y_standardized.shape[1])]
+            model = ModelListGP(*gps)
+            mll = SumMarginalLogLikelihood(model.likelihood, model)
         
         fit_gpytorch_mll(mll)
 

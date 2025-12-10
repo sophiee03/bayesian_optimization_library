@@ -1,32 +1,32 @@
-from bo_loop import bo_loop
+from .bo_loop import bo_loop
 import traceback, warnings, torch, argparse, json, sys
-import matplotlib.pyplot as plt
-from helpers.logger import setup_console_logger
-from models import train_model
-from helpers.config import OptimizationConfig, Objective, BoundsGenerator, ATTRIBUTES, OPTIMIZERS
-from data_loader import load_data
-from helpers.plot import plot_data, plot_all, plot_outputs
-from helpers.utils import visualize_data
-from helpers.processing import normalize_val, denormalize_val
+from .helpers.logger import setup_console_logger
+from .models import train_model
+from .helpers.config import OptimizationConfig, Objective, BoundsGenerator, ATTRIBUTES, OPTIMIZERS, ACQF
+from .data_loader import load_data
+from .helpers.utils import visualize_data
+from .helpers.processing import normalize_val, denormalize_val
 
 def parse_arg():
     parser = argparse.ArgumentParser(description = "Bayesian Optimization with BoTorch")
-    parser.add_argument('--folder', type=str, default='../test/prov', 
+    parser.add_argument('--folder', type=str, default='./test/prov_qlognoisyei', 
                         help="Folder to extract training data")
     parser.add_argument('--output', nargs='+', type=str, choices=list(ATTRIBUTES.keys()),
                         help="Metrics to maximize/minimize")
     parser.add_argument('--input', nargs='+', type=str, choices=list(ATTRIBUTES.keys()),
                         help="Parameters to optimize")
-    parser.add_argument('--multi_model', type=str, choices=['modellistgp', 'kroneckermultitaskgp'],
-                        help="type of model")
     parser.add_argument('--n_candidates', type=int,
-                        help="number of candidates to generate")
+                        help="Number of candidates to generate")
     parser.add_argument('--n_restarts', type=int, 
                         help="Number of restarts of the optimizer")
     parser.add_argument('--raw_samples', type=int, 
-                        help="number of raw samples to generate before choosing the candidates")
+                        help="Number of raw samples to generate before choosing the candidates")
     parser.add_argument('--optimizer', choices=list(OPTIMIZERS), 
-                        help="optimizer to choose the candidates")
+                        help="Optimizer to choose the candidates")
+    parser.add_argument('--acqf', type=str, choices=list(ACQF), 
+                        help='Acquisition function to use to perform optimization')
+    parser.add_argument('--beta', type=float,
+                        help='Exploration-Exploitation trade-off (low == more exploitation)')
     parser.add_argument('--verbose', action='store_true')
     parser.add_argument('--default', action='store_true')
 
@@ -53,10 +53,10 @@ def main(args):
             n_restarts=args.n_restarts,
             raw_samples=args.raw_samples,
             optimizers=args.optimizer,
-            multi_model = args.multi_model,
+            acqf=args.acqf,
+            beta=args.beta,
             verbose=args.verbose,
         )
-
     # DEFAULT EXECUTION
     else:
         data_needed = {
@@ -68,10 +68,11 @@ def main(args):
             optimization_parameters = data_needed['input'],
             objective = Objective.MULTI,
             n_candidates=1,
-            n_restarts=10,
+            n_restarts=8,
             raw_samples=200,
-            optimizers='optimize_acqf',
-            multi_model='modellistgp'
+            optimizers=OPTIMIZERS[0],
+            acqf=ACQF[2],
+            beta=1
         )
 
     # retrieve data from the training set with ETL module
@@ -86,32 +87,22 @@ def main(args):
     model = train_model(config, X_normalized, Y_standardized)
 
     # generate candidates
-    results = bo_loop(config, model, X_normalized, Y_standardized, bounds_manager)
-    
-    final_results = {
+    (candidates, acq_val), opt_time = bo_loop(config, model, X_normalized, Y_standardized, bounds_manager)
+
+    candidates_denorm = denormalize_val(candidates, original_bounds, config)
+    acq_values = acq_val if isinstance(acq_val, list) else acq_val.tolist()
+
+    if config.verbose:
+        print(f'='*60)
+        print(f"Candidates suggested:\n     -- acq_values: {acq_values} \n     -- Elapsed time: {opt_time:.4f}s")
+        visualize_data(candidates_denorm, config.optimization_parameters)
+
+    results = {
         'configuration': config.return_dict(),
-        'candidates': []
+        'candidates': candidates_denorm
     }
 
-    for optimizer, result in results.items():
-        if optimizer not in config.optimizers.split(' '):
-            continue
-
-        ((candidates, acq_val), elapsed_time) = result
-
-        candidates_denorm = denormalize_val(candidates, original_bounds)
-        acq_values = acq_val if isinstance(acq_val, list) else [acq_val]
-
-        final_results['candidates'].append(candidates_denorm)
-
-        if config.verbose:
-            print(f'='*60)
-            print(f"Candidates suggested with method \'{optimizer}\'\n     -- acq_value=[{acq_values}] \n     -- Elapsed time: {elapsed_time:.4f}s")
-            visualize_data(candidates_denorm, config.optimization_parameters)
-
-    #plot_all(X_data, final_results, config)
-    #plt.show()
-    print(json.dumps(final_results))
+    print(json.dumps(results))
     sys.stdout.flush()
 
 if __name__ == '__main__':

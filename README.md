@@ -1,25 +1,14 @@
 # BAYESIAN OPTIMIZATION WITH BOTORCH
 
-DEFAULT EXECUTION: python main.py --default
-      - it will execute with a multi-objective (accuracy maximization and emissions minimization)
-      - it will train the model with a modellistGP
-      - it will provide 3 candidates generated with qUCB and optimize_acqf
-
-CUSTOMIZED EXECUTION: it is possible to customize these attributes:
-      --folder (where the training data to retrive are stored)
-      --output (metrics to maximize/minimize)
-      --input (parameters to optimize)
-      --multi_model (model to use for training)
-      --n_candidates (number of candidates to generate)
-      --n_restarts (number of restarts to find the best candidate)
-      --raw_samples (number of samples to generate among which the optimizer will choose)
-      --optimizer (optimizer to use)
-      --verbose (to see workflow and timings)
-
-NB: the etl module is a submodule so it is necessary to install it 
-
 # INSTALL AND USE THE LIBRARY
-1. Clone the repositoy
-2. Upload the submodule (git submodule update --init --recursive)
-3. Choose among the 2 execution option
-   NB: it is necessary to select the folder of the training dataset
+1. Install the library 
+```
+pip install BayesianOptimization
+```
+2. Upload the submodule 
+```
+git submodule update --init --recursive
+```
+3. Use the BayesianOptimizer class to perform bayesian optimization on your datasets
+
+NB: examples of use are provided in the folder examples

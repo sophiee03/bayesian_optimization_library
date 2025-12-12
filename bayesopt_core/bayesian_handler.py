@@ -30,7 +30,7 @@ class BayesianOptimizer:
         self.model = None
         self.original_bounds = None
 
-    def get_and_prepare_data(self, data_needed, folder):
+    def get_and_prepare_data(self, folder, data_needed):
         '''load data and normalize/standardize them with bounds generated'''
         self.X_data, self.Y_data = load_data(self.config, folder, data_needed)
         self.original_bounds = self.bounds_manager.generate_bounds(self.X_data).to(dtype=torch.float64)
@@ -55,11 +55,11 @@ class BayesianOptimizer:
         results = OptimizationResults(candidates_denormalized, acq_values, opt_time)
         return results
     
-    def run(self, folder: str = './test/prov', data_needed: Dict = 
+    def run(self, folder: str, data_needed: Dict = 
             {'input': ['DROPOUT', 'BATCH_SIZE', 'EPOCHS', 'LR', 'MODEL_SIZE'], 
             'output': ['accuracy', 'emissions']}) -> OptimizationResults:
         '''run all the Bayesian Optimization pipeline and return final results'''
-        self.get_and_prepare_data(data_needed, folder)
+        self.get_and_prepare_data(folder, data_needed)
         self.model_training()
         results = self.optimize()
         return results

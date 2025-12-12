@@ -11,4 +11,4 @@ git submodule update --init --recursive
 ```
 3. Use the BayesianOptimizer class to perform bayesian optimization on your datasets
 
-NB: examples of use are provided in the folder examples
+NB: examples of use are provided in the folder examples (it is required to have a script for yprov4ml execution)

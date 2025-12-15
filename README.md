@@ -6,7 +6,7 @@ Library to perform Bayesian optimization based on BoTorch library. It is useful 
 ```
 pip install BayesianOptimization
 ```
-3. Use the BayesianOptimizer class to perform bayesian optimization on your datasets
+2. Use the BayesianOptimizer class to perform bayesian optimization on your datasets
 
 NB: examples of use are provided in the folder examples
 

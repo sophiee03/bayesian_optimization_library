@@ -88,7 +88,7 @@ def get_candidates(config: OptimizationConfig, model, X, Y, bm: BoundsGenerator)
         config (OptimizationConfig): configuration of the BayesianOptimization (needed for optimizers settings)
         model (SingleTaskGP/ModelListGP): model trained with training dataset
         X (Tensor): training parameters normalized
-        Y (Tensor): training metrics standardized
+        Y (Tensor): training metrics
         bm (BoundsGenerator): instance to generate normalized bounds for the parameters
     
     Returns: 

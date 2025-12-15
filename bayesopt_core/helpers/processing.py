@@ -1,51 +1,36 @@
 import torch
 from ..config import OptimizationConfig
-from botorch.utils.transforms import normalize, standardize, unnormalize
+from botorch.utils.transforms import normalize, unnormalize
 
-def minimization_transformation(data):
-    """function to make negative values of the metrics to minimize, to transform this problem in a maximization problem
+def minimization_transformation(data, config: OptimizationConfig):
+    """function to change sign of the metrics to minimize, to transform this problem in a maximization problem
     
     Args:
-        data (Dict): data given as input for training
+        data (List[List]): data given as input for training
+        config (OptimizationConfig): configuration of the BayesianOptimization (to check which metrics are to minimize)
 
     Returns:
-        Dict: data with the metrics to minimize multiplied by -1
+        List[List]: data with the metrics to minimize multiplied by -1
     """
-    for col in range(len(data['metrics'][0])):
-        if data['metrics'][1][col]=='MIN':
-            for row in range(len(data['metrics'][2])):
-                data['metrics'][2][row][col] *= -1
+    for col in range(len(config.objective_metrics)):
+        if config.goal[col]=='MIN':
+            for row in range(len(data)):
+                data[row][col] *= -1
     return data
 
-def normalize_val(x: torch.Tensor, y: torch.Tensor, bounds: torch.Tensor):
-    """function to normalize and standardize data
+def normalize_val(x: torch.Tensor, bounds: torch.Tensor):
+    """function to normalize data
     
     Args:
         x (Tensor): parameters to normalize
-        y (Tensor): metrics to standardize
         bounds (Tensor): bounds of parameters
 
     Returns:
         X_norm (Tensor): parameters normalized
-        Y_stand (Tensor): metrics standardized
     """
-    # Here we trust that etl module returned no NaN values
     X_norm = normalize(x, bounds)
-    
-    if y.dim() >= 2 and y.shape[1] > 1:
-        Y_stand=torch.zeros_like(y)
-        for i in range(y.shape[1]):
-            y_col = y[:,i:i+1]
-            mean = y_col.mean(dim=0)
-            std = y_col.std(dim=0)
-            std[std==0] = 1.0
-            Y_stand[:,i] = ((y_col - mean) / std).squeeze(-1)
-    else:
-        Y_stand = (standardize(y))
-        if Y_stand.dim == 1:
-            Y_stand = Y_stand.unsqueeze(-1)
 
-    return X_norm, Y_stand
+    return X_norm
 
 def denormalize_val(candidates: torch.Tensor, bounds: torch.Tensor, config: OptimizationConfig) -> torch.Tensor:
     """function to denormalize data to the original bounds and handle modelsize generated
@@ -59,6 +44,7 @@ def denormalize_val(candidates: torch.Tensor, bounds: torch.Tensor, config: Opti
         cand_denormalized (List): candidates denormalized
     """
     cand_denormalized = unnormalize(candidates, bounds).tolist()
+    #TO REMOVE
     for n,r in enumerate(cand_denormalized):
         for par_n, par in enumerate(config.optimization_parameters):
             if par == 'MODEL_SIZE':
@@ -66,9 +52,9 @@ def denormalize_val(candidates: torch.Tensor, bounds: torch.Tensor, config: Opti
     
     return cand_denormalized
 
+#TO REMOVE
 def handle_modelsize(n: float):
-    """ TO REMOVE
-    function to transform the modelsize value generated into the relative string"""
+    """function to transform the modelsize value generated into the relative string"""
     if n <= 3700506.0:      #small
         return 'small'
     elif n <= 9853386.0:    #medium

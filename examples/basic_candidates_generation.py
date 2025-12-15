@@ -5,7 +5,7 @@ from etl.extractors.provenance_extractor import ProvenanceExtractor
 
 if __name__ == '__main__':
     data_needed = {
-        'input': ['DROPOUT', 'BATCH_SIZE', 'EPOCHS', 'LR', 'MODEL_SIZE'],
+        'input': ['DROPOUT', 'BATCH_SIZE', 'EPOCHS', 'LR'],
         'output': ['accuracy', 'emissions']
     }
     extractor = ProvenanceExtractor('../test/prov', data_needed)
@@ -15,6 +15,7 @@ if __name__ == '__main__':
     bayesopt = BayesianOptimizer(OptimizationConfig(
         data_needed['output'],
         data_needed['input'],
+        ['MAX', 'MIN'],
         objective=Objective.MULTI,
         n_candidates=1,
         n_restarts=10,
@@ -22,12 +23,11 @@ if __name__ == '__main__':
         optimizers='optimize_acqf',
         acqf='ucb',
         beta=1.5,
-        verbose=True
     ))
 
     data = {
         'parameters': (data_needed['input'], inp),
-        'metrics': (data_needed['output'], ['MAX', 'MIN'], out)
+        'metrics': (data_needed['output'], out)
     }
 
     res = bayesopt.run(data) 

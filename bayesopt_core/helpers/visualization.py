@@ -10,13 +10,13 @@ def visualize_data(d: torch.Tensor, headers: List=None):
     
     Args:
         d (Tensor): data to visualize
-        headers (List): parameter/metrics names
+        headers (List[str]): parameter/metrics names
     """
     if isinstance(d, torch.Tensor):
         data = d.cpu().numpy().tolist()
     else:
         data = d
-    print(tabulate(data, headers=headers, floatfmt=(['.6f']*len(headers)), tablefmt="grid"))
+    print(tabulate(data, headers=headers, floatfmt=(['.6f']*len(headers)), tablefmt="simple_grid"))
 
 def handle_acqv(a):
     """function to handle acquisition values format in plots"""

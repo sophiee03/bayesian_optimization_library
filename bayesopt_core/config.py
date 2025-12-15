@@ -20,6 +20,7 @@ class  OptimizationConfig:
     Attributes:
         objective_metrics (List): metrics to maximize
         optimization_parameters (List): parameters to optimize
+        goal (List[str]): objective (MAX/MIN) of each metric
         objective (Objective): number of metrics we want to maximize/minimize (single/multi)
         n_candidates (int = 1): number of candidates the routine will produce
         n_restarts (int = 10): number of restarts for the optimization routine
@@ -31,6 +32,7 @@ class  OptimizationConfig:
     """
     objective_metrics: List[str]
     optimization_parameters: List[str]
+    goal: List[str]
     objective: Objective
     n_candidates: int = 1
     n_restarts: int = 10

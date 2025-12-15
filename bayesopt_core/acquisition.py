@@ -16,7 +16,7 @@ def generate_acqf(config: OptimizationConfig, model, X: torch.Tensor, Y: torch.T
         config (OptimizationConfig): configuration of the BayesianOptimization (needed for function choice and settings)
         model (SingleTaskGP/ModelListGP): model trained
         X (Tensor): training parameters normalized
-        Y (Tensor): training metrics standardized
+        Y (Tensor): training metrics
 
     Returns:
         AcquisitionFunction: instance of the acquisition function generated

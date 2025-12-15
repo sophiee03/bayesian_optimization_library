@@ -10,7 +10,6 @@ import sys, subprocess
 if __name__ == '__main__':
     #for now the configuration is editable here (later we can find another way for the user to setup optimization settings)
     bayesopt = BayesianOptimizer(OptimizationConfig(
-        #NB: if you change here the parameters/metrics the execution will not work
         ['accuracy', 'emissions'],                                          
         ['DROPUOT', 'BATCH_SIZE', 'EPOCHS', 'LR', 'MODEL_SIZE'],
         objective=Objective.MULTI,

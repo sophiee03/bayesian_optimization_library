@@ -1,3 +1,0 @@
-[submodule "bayesopt_core/etl"]
-	path = bayesopt_core/data/etl
-	url = https://github.com/SecondarySkyler/etl

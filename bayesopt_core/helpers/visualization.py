@@ -1,11 +1,25 @@
 import matplotlib.pyplot as plt
 import torch
 import numpy as np
-from typing import Dict
+from typing import Dict, List
 from ..config import OptimizationConfig
+from tabulate import tabulate
+
+def visualize_data(d: torch.Tensor, headers: List=None):
+    """function to print data
+    
+    Args:
+        d (Tensor): data to visualize
+        headers (List): parameter/metrics names
+    """
+    if isinstance(d, torch.Tensor):
+        data = d.cpu().numpy().tolist()
+    else:
+        data = d
+    print(tabulate(data, headers=headers, floatfmt=(['.6f']*len(headers)), tablefmt="grid"))
 
 def handle_acqv(a):
-    '''function to handle acquisition values format'''
+    """function to handle acquisition values format in plots"""
     if isinstance(a, list):
         result = []
         for item in a:
@@ -23,8 +37,8 @@ def handle_acqv(a):
     # Scalar
     return [float(a)]
 
-def plot_outputs(train_data: torch.Tensor, config: OptimizationConfig):
-    '''plotting results measured from training dataset'''
+def plot_train(train_data: torch.Tensor, config: OptimizationConfig):
+    """plotting results measured from training dataset"""
     fig, ax = plt.subplots()
 
     train_par_1 = train_data[:,0]
@@ -38,7 +52,7 @@ def plot_outputs(train_data: torch.Tensor, config: OptimizationConfig):
     return fig
 
 def plot_data(train: torch.Tensor, result: torch.Tensor, acqv: float | torch.Tensor, opt_name: str, config: OptimizationConfig):
-    '''plotting results (only the first 2 parameters for simplicity)'''
+    """plotting results (only the first 2 parameters for simplicity), useful to compare these parameters with training choices"""
     fig, ax = plt.subplots()
 
     if result is None:
@@ -65,7 +79,7 @@ def plot_data(train: torch.Tensor, result: torch.Tensor, acqv: float | torch.Ten
     return fig
 
 def plot_all(train_data: torch.Tensor, results: Dict, config: OptimizationConfig):
-    '''plotting candidates and training set for all the optimizers used'''
+    """plotting candidates and training set for all the optimizers used"""
     fig, ax = plt.subplots()
 
     ax.scatter(train_data[:,0], train_data[:,1], c="blue", alpha=0.6, label="Training")

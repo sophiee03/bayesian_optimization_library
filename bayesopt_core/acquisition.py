@@ -6,12 +6,21 @@ from botorch.utils.multi_objective.box_decompositions.non_dominated import FastN
 from botorch.acquisition.objective import ScalarizedPosteriorTransform
 
 def generate_acqf(config: OptimizationConfig, model, X: torch.Tensor, Y: torch.Tensor):
-    '''function to generate the acquisition function for single or multi objective
+    """function to generate the acquisition function for single or multi objective:
         - qlogei = MC-based batch log expected improvement
         - qlognei = MC-based batch noisy expected improvement
         - qlogehvi = parallel log expected hypervolume improvement supporting 2+ outcomes
         - qucb = MC-based batch upper confidence bound
-    '''
+    
+    Args:
+        config (OptimizationConfig): configuration of the BayesianOptimization (needed for function choice and settings)
+        model (SingleTaskGP/ModelListGP): model trained
+        X (Tensor): training parameters normalized
+        Y (Tensor): training metrics standardized
+
+    Returns:
+        AcquisitionFunction: instance of the acquisition function generated
+    """
     if config.objective == Objective.SINGLE:
         acq = qLogExpectedImprovement(
             model=model, 

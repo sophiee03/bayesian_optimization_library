@@ -5,49 +5,30 @@ from functools import wraps
 import torch, logging, time
 from contextlib import contextmanager
 
-class Type(Enum):
-    METRIC = 'metric',
-    PARAMETER = 'parameter'
-
-ATTRIBUTES = {
-    'EPOCHS': (Type.PARAMETER, '.0f'),
-    'LR': (Type.PARAMETER, '.6f'),
-    'BATCH_SIZE': (Type.PARAMETER, '.0f'),
-    'DROPOUT': (Type.PARAMETER, '.2f'),
-    'MODEL_SIZE': (Type.PARAMETER, ''),
-    'emissions': (Type.METRIC, '.6f', 'MIN'),
-    'accuracy': (Type.METRIC, '.6f', 'MAX'),
-    'cpu_energy': (Type.METRIC, '.4f', 'MIN'),
-    'cpu_power': (Type.METRIC, '.4f', 'MIN'),
-    'emissions_rate': (Type.METRIC, '.4f', 'MIN'),
-    'energy_consumed': (Type.METRIC, '.4f', 'MIN'),
-    'gpu_energy': (Type.METRIC, '.4f', 'MIN'),
-    'gpu_power': (Type.METRIC, '.4f', 'MIN'),
-    'ram_energy': (Type.METRIC, '.4f', 'MIN'),
-    'ram_power': (Type.METRIC, '.4f', 'MIN')
-}
-
 OPTIMIZERS = ['optimize_acqf', 'batch_init_cond', 'optimize_acqf_cyclic']
 ACQF = ['qlogei', 'qlognei', 'ucb', 'qlogehvi']
 
 class Objective(Enum):
+    """class to define the type of objective"""
     SINGLE = "SINGLE"
     MULTI = "MULTI"
 
 @dataclass
 class  OptimizationConfig:
-    '''Configuration choices:
-        - objective_metrics       = list of metrics to maximize
-        - optimization_parameters = list of parameters to optimize
-        - objective               = number of metrics we want to maximize/minimize
-        - n_candidates            = number of candidates the bo_loop will return
-        - n_restarts              = number of restarts for the optimization routine
-        - raw_samples             = number of random samples when initializing the optimization
-        - optimizers              = choice of the optimizer to use
-        - acqf                    = choice of the acquisition function to use
-        - verbose                 = flag to follow BO workflow
-        - default                 = flag to adopt default condifguration
-    '''
+    """class to define the configuration choices for the optimization
+    
+    Attributes:
+        objective_metrics (List): metrics to maximize
+        optimization_parameters (List): parameters to optimize
+        objective (Objective): number of metrics we want to maximize/minimize (single/multi)
+        n_candidates (int = 1): number of candidates the routine will produce
+        n_restarts (int = 10): number of restarts for the optimization routine
+        raw_samples (int = 200): number of random samples when initializing the optimization
+        optimizers (str = 'optimize_acqf'): choice of the optimizer to use
+        acqf (str = 'ucb'): choice of the acquisition function to use
+        beta (float = 1.0): attribute to balance exploration-exploitation
+        verbose (bool = False): flag to follow BO workflow
+    """
     objective_metrics: List[str]
     optimization_parameters: List[str]
     objective: Objective
@@ -58,10 +39,9 @@ class  OptimizationConfig:
     acqf: str = ACQF[2]
     beta: float = 1.0
     verbose: bool = False
-    default: bool = False
 
     def __post_init__(self):
-        '''validate configuration after initialization'''
+        """validate configuration after initialization"""
         for f in fields(self):
             value = getattr(self, f.name)
             if value is None:
@@ -71,25 +51,31 @@ class  OptimizationConfig:
             raise ValueError(f"n_candidates must be at least 1")
         
         if self.n_restarts < 1:
-            raise ValueError(f"iterations must be at least 1")
+            raise ValueError(f"n_restarts must at least be 1")
         
         if self.raw_samples < 1:
-            raise ValueError(f"raw_samples must at least be 1 \n    (it is suggested to have at least 2*d samples where d is the number of parameters)")
+            raise ValueError(f"raw_samples must at least be 1 (it is suggested to have at least 2*d samples where d is the number of parameters)")
 
-    def _details(self):
-        '''print a summary of the configuration choices'''
+        if self.optimizers not in OPTIMIZERS:
+            raise ValueError(f"optimizer not recognized")
+        
+        if self.acqf not in ACQF:
+            raise ValueError(f"acquisition function not recognized")
+
+    def details(self):
+        """print a summary of the configuration choices"""
         print(f"{'-'*60}")
         print(f"CONFIGURATION DETAILS:")
         print(f"    executing a {self.objective} model with:")
         print(f"    - Parameters to optimize: {self.optimization_parameters}")
         print(f"    - Metrics to maximize/minimize: {self.objective_metrics}")
-        print(f"    {self.n_candidates} candidates are required")
-        print(f"    It will be used a {self.optimizers} optimizer(s) with the following parameters:")
+        print(f"    {self.n_candidates} candidates are required to be generated")
+        print(f"    It will be used a {self.acqf} acquisition function \nwith {self.optimizers} as optimizer setup with the following settings:")
         print(f"    -> n_restarts: {self.n_restarts}    raw_samples: {self.raw_samples}")
         print(f"{'-'*60}")
     
     def return_dict(self):
-        '''generate a dictionary of the configuration attributes'''
+        """generate a dictionary of the configuration attributes"""
         d = {
             'objective_metrics': self.objective_metrics,
             'optimization_parameters': self.optimization_parameters,
@@ -99,19 +85,27 @@ class  OptimizationConfig:
             'raw_samples': self.raw_samples,
             'optimizers': self.optimizers,
             'acqf': self.acqf,
-            'verbose': self.verbose,
-            'default': self.default
+            'beta': self.beta,
+            'verbose': self.verbose
         }
         return d
 
 @dataclass
 class BoundsGenerator():
-    '''class to create parameter bounds needed in normalization'''
+    """class to create parameter bounds needed in normalization
+    Attributes:
+        margin (float): used to add a range to the max and min value found of the parameters
+        force_positive (bool): flag to force the bounds to be strictly positive
+    """
     margin: float = 0.02
     force_positive: bool = True
 
     def generate_bounds(self, t: torch.Tensor):
-        '''generate the bounds based on the min and max value of the parameter data'''
+        """generate the bounds based on the min and max value of the parameter
+
+        Args:
+            t (Tensor): parameters data
+        """
         lower = t.min(dim=0)[0]
         upper = t.max(dim=0)[0]
 
@@ -127,19 +121,27 @@ class BoundsGenerator():
         return torch.stack([lower, upper])
     
     def generate_norm_bounds(self, n: int):
-        '''generate bounds normalized [0.0][1.0]'''
+        """generate bounds normalized [[0.0][1.0]]*n
+
+        Args:
+            n (int): number of parameters used
+        """
         return torch.tensor([   [0.0]*n,
                                 [1.0]*n], dtype=torch.float64)
     
 class Timer:
-    '''class to register and observe timings'''
+    """class to register and observe timings"""
     def __init__(self, logger: logging.Logger = None):
         self.timings: Dict[str, float] = {}
         self.logger = logger or logging.getLogger(__name__)
 
     @contextmanager
     def measure(self, name: str):
-        '''context manager to measure a specific block of code'''
+        """context manager to measure a specific block of code
+        
+        Args:
+            name (str): saving name
+        """
         start = time.perf_counter()
         try:
             yield
@@ -148,13 +150,22 @@ class Timer:
             self._record_timings(name, elapsed)
 
     def _record_timings(self, name: str, elapsed: float):
-        '''register timings measured'''
+        """register timings measured
+        
+        Args:
+            name (str): saving name
+            elapsed (float): time recorded
+        """
         if name not in self.timings:
             self.timings[name] = []
         self.timings[name] = elapsed
 
     def time_function(self, name: str = None):
-        '''register the time that a function takes to execute'''
+        """register the time that a function takes to execute
+        
+        Args:
+            name (str): saving name
+        """
         def decorator(func: Callable) -> Callable:
             optimizer_name = name or func.__name__
             @wraps(func)
@@ -170,11 +181,15 @@ class Timer:
         return decorator
 
     def get_opt_time(self, name: str) -> float:
-        '''obtain only the measured time required'''
+        """obtain only the measured time required
+        
+        Args:
+            name (str): saved name
+        """
         if name not in self.timings.keys():
             raise ValueError(f"Time not found for {name} optimizer")
         return self.timings[name]
 
     def reset(self):
-        '''clear all times registered'''
+        """clear all times registered"""
         self.timings.clear()

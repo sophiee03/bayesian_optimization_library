@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bayesian-optimization-library"
+version = "0.1.0"
+description = "Bayesian optimization library built on BoTorch for HPT"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+  { name = "Sophie Motter", email = "sophiemotter.03@gmail.com" },
+]
+dependencies = [
+  "torch",
+  "botorch",
+  "numpy",
+  "gpytorch",
+  "logging",
+  "matplotlib"
+]
+
+[project.urls]
+Homepage = "https://github.com/sophiee03/bayesian_optimization_library.git"
+Source = "https://github.com/sophiee03/bayesian_optimization_library.git"
+
+[tool.setuptools]
+package-dir = {"" = "bayesopt_core"}
+
+[tool.setuptools.packages.find]
+where = ["bayesopt_core"]

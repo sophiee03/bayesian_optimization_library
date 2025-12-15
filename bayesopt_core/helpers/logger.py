@@ -15,10 +15,10 @@ def setup_console_logger(name: str = 'BO') -> logging.Logger:
     if logger.handlers:
         return logger
     
-    logger.setLevel(logging.info)
+    logger.setLevel(logging.INFO)
 
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.info)
+    console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(logging.Formatter('%(message)s'))
     logger.addHandler(console_handler)
 

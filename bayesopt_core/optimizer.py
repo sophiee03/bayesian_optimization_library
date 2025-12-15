@@ -97,12 +97,12 @@ def get_candidates(config: OptimizationConfig, model, X, Y, bm: BoundsGenerator)
     acqf = generate_acqf(config, model,X, Y)
     
     if config.optimizers == OPTIMIZERS[0]:
-        result = basic_optim(acqf, bm, X.shape[1], config)
+        result = basic_optim(acqf, bm, config)
 
     elif config.optimizers == OPTIMIZERS[1]:
-        result = batch_init_cond_optim(acqf, bm, X.shape[1], config)
+        result = batch_init_cond_optim(acqf, bm, config)
 
     elif config.optimizers == OPTIMIZERS[2]:
-        result = cyclic_optim(acqf, bm, X.shape[1], config)
+        result = cyclic_optim(acqf, bm, config)
 
     return result

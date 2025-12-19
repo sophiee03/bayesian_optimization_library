@@ -1,5 +1,5 @@
 # BAYESIAN OPTIMIZATION WITH BOTORCH
-Library to perform Bayesian optimization based on BoTorch library. It is useful for HyperParameterTuning (HPT) problems since it finds parameters that maximizes the objective metrics. 
+Library to perform Bayesian Optimization based on BoTorch library. It is useful for HyperParameterTuning (HPT) problems since it finds parameters that maximizes the objective metrics (or minimizes them if you set it to). 
 
 # Install and use the library
 1. Install the library 
@@ -27,7 +27,8 @@ bayesian_optimization_library/
 │       └── visualization.py
 ├── examples/
 │   ├── basic_candidates_generation.ipynb
-│   └── candidate_exec_with_yprov4ml.ipynb
+│   ├── cand_generation_with_estimation.ipynb
+│   └── exec_with_yprov4ml.ipynb
 ├── pyproject.toml
 ├── README.md
 └── .gitignore

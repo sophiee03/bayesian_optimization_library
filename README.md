@@ -24,11 +24,14 @@ bayesian_optimization_library/
 │       ├── __init__.py
 │       ├── logger.py
 │       ├── processing.py
+│       ├── results_to_csv.py
 │       └── visualization.py
 ├── examples/
 │   ├── basic_candidates_generation.ipynb
-│   ├── cand_generation_with_estimation.ipynb
-│   └── exec_with_yprov4ml.ipynb
+│   ├── basic_candidate_execution.ipynb
+│   ├── change_config_in_execution.ipynb
+│   ├── detailed_cand_generation.ipynb
+│   └── saving_candidates_to_csv.ipynb
 ├── pyproject.toml
 ├── README.md
 └── .gitignore

@@ -1,8 +1,8 @@
-images/
 test/
 etl
 */prov*
 yProvML/
-*.egg-info/
 __pycache__
-examples/data
+*/data
+*.ipynb_checkpoints
+*.csv

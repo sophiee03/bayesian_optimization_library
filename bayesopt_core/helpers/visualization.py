@@ -5,7 +5,7 @@ from typing import Dict, List
 from ..config import OptimizationConfig
 from tabulate import tabulate
 
-def visualize_data(d: torch.Tensor, headers: List=None):
+def visualize_data(d: torch.Tensor, headers: List):
     """function to print data
     
     Args:

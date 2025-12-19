@@ -1,5 +1,5 @@
 import torch
-from .config import OptimizationConfig, ACQF, Objective
+from .config import OptimizationConfig, ACQF
 from botorch.acquisition import qLogExpectedImprovement, qLogNoisyExpectedImprovement, qUpperConfidenceBound
 from botorch.acquisition.multi_objective.logei import qLogExpectedHypervolumeImprovement
 from botorch.utils.multi_objective.box_decompositions.non_dominated import FastNondominatedPartitioning
@@ -21,7 +21,7 @@ def generate_acqf(config: OptimizationConfig, model, X: torch.Tensor, Y: torch.T
     Returns:
         AcquisitionFunction: instance of the acquisition function generated
     """
-    if config.objective == Objective.SINGLE:
+    if len(config.objective_metrics) == 1:
         acq = qLogExpectedImprovement(
             model=model, 
             best_f=Y.max()

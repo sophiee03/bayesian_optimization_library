@@ -57,19 +57,24 @@ class BayesianOptimizer:
         self.original_bounds = None
         self.posterior = None
 
-    def get_and_prepare_data(self, data: Dict):
+    def change_config(self, new_conf: OptimizationConfig):
+        """change configuration settings"""
+        self.config = new_conf
+        print(f"Successfully changed BayesianOptimizer configuration")
+
+    def prepare_data(self, data: Dict):
         """process and normalize data with bounds generated
         
         Args: 
-            data (Dict): dictionary containing parameters (names, values) and metrics (names, values)
+            data (Dict): dictionary containing parameters and metrics
         """
-        data['metrics'] = (data['metrics'][0], minimization_transformation(data['metrics'][1], self.config))
+        data['metrics'] = minimization_transformation(data['metrics'], self.config)
 
         if self.config.verbose:
             self.logger.info('   -> Data transformed')
 
-        self.X_data = torch.tensor(data['parameters'][1], dtype=torch.float64)
-        self.Y_data = torch.tensor(data['metrics'][1], dtype=torch.float64)
+        self.X_data = torch.tensor(data['parameters'], dtype=torch.float64)
+        self.Y_data = torch.tensor(data['metrics'], dtype=torch.float64)
 
         self.original_bounds = self.bounds_manager.generate_bounds(self.X_data).to(dtype=torch.float64)
 
@@ -107,7 +112,7 @@ class BayesianOptimizer:
         if self.config.verbose:
             self.logger.info('   -> Candidates obtained')
 
-        candidates_denormalized = denormalize_val(candidates_normalized, self.original_bounds, self.config)
+        candidates_denormalized = denormalize_val(candidates_normalized, self.original_bounds)
         if self.config.verbose:
             self.logger.info('   -> Candidates denormalized')
 
@@ -159,7 +164,7 @@ class BayesianOptimizer:
         with self.timer.measure('tot_optimization'):
             if self.config.verbose:
                 self.logger.info('   -> Starting Bayesian Optimization')
-            self.get_and_prepare_data(data)
+            self.prepare_data(data)
             self.model_training()
             norm_candidates, denorm_candidates, acq_value = self.optimize()
 

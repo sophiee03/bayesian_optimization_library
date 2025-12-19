@@ -1,5 +1,5 @@
 import torch
-from .config import OptimizationConfig, Objective
+from .config import OptimizationConfig
 from botorch.models import SingleTaskGP, ModelListGP
 from botorch.models.transforms.outcome import Standardize
 from gpytorch.mlls import ExactMarginalLogLikelihood
@@ -17,10 +17,10 @@ def train_model(config: OptimizationConfig, X_normalized: torch.Tensor, Y_data: 
     Returns:
         (SingleTaskGP/ModelListGP):instance of the model created and trained
     """ 
-    if config.objective == Objective.SINGLE:
+    if len(config.objective_metrics) == 1:
         model = SingleTaskGP(X_normalized, Y_data, outcome_transform=Standardize(m=1))
         mll = ExactMarginalLogLikelihood(model.likelihood, model)
-    elif config.objective == Objective.MULTI:
+    else:
         gps = [SingleTaskGP(X_normalized, Y_data[:,y].unsqueeze(-1), outcome_transform=Standardize(m=1)) for y in range(Y_data.shape[1])]
         model = ModelListGP(*gps)
         mll = SumMarginalLogLikelihood(model.likelihood, model)

@@ -32,32 +32,16 @@ def normalize_val(x: torch.Tensor, bounds: torch.Tensor):
 
     return X_norm
 
-def denormalize_val(candidates: torch.Tensor, bounds: torch.Tensor, config: OptimizationConfig) -> torch.Tensor:
+def denormalize_val(candidates: torch.Tensor, bounds: torch.Tensor) -> torch.Tensor:
     """function to denormalize data to the original bounds and handle modelsize generated
     
     Args:
         candidates (Tensor): candidates generated
         bounds (Tensor): bounds of the parameters
-        config (OptimizationConfig): configuration of the BayesianOptimization
 
     Returns: 
         cand_denormalized (List): candidates denormalized
     """
     cand_denormalized = unnormalize(candidates, bounds).tolist()
-    #TO REMOVE
-    for n,r in enumerate(cand_denormalized):
-        for par_n, par in enumerate(config.optimization_parameters):
-            if par == 'MODEL_SIZE':
-                cand_denormalized[n][par_n] = str(handle_modelsize(r[par_n]))
     
     return cand_denormalized
-
-#TO REMOVE
-def handle_modelsize(n: float):
-    """function to transform the modelsize value generated into the relative string"""
-    if n <= 3700506.0:      #small
-        return 'small'
-    elif n <= 9853386.0:    #medium
-        return 'medium'
-    else:                   #large
-        return 'large'

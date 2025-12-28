@@ -13,7 +13,7 @@ def minimization_transformation(data, config: OptimizationConfig):
         List[List]: data with the metrics to minimize multiplied by -1
     """
     for col in range(len(config.objective_metrics)):
-        if config.goal[col].lower()=='min':
+        if config.goal[col].lower()=="min":
             for row in range(len(data)):
                 data[row][col] *= -1
     return data

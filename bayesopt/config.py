@@ -4,8 +4,8 @@ from functools import wraps
 import torch, logging, time
 from contextlib import contextmanager
 
-OPTIMIZERS = ['optimize_acqf', 'batch_init_cond', 'optimize_acqf_cyclic']
-ACQF = ['qlogei', 'qlognei', 'ucb', 'qlogehvi']
+OPTIMIZERS = ["optimize_acqf", "batch_init_cond", "optimize_acqf_cyclic"]
+ACQF = ["qlogei", "qlognei", "ucb", "qlogehvi"]
 
 @dataclass
 class  OptimizationConfig:

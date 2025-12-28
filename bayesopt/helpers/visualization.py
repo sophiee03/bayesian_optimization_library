@@ -16,7 +16,7 @@ def visualize_data(d: torch.Tensor, headers: List):
         data = d.cpu().numpy().tolist()
     else:
         data = d
-    print(tabulate(data, headers=headers, floatfmt=(['.6f']*len(headers)), tablefmt="simple_grid"))
+    print(tabulate(data, headers=headers, floatfmt=([".6f"]*len(headers)), tablefmt="simple_grid"))
 
 def handle_acqv(a):
     """function to handle acquisition values format in plots"""
@@ -43,11 +43,11 @@ def plot_train(train_data: torch.Tensor, config: OptimizationConfig):
 
     train_par_1 = train_data[:,0]
     train_par_2 = train_data[:,1]
-    ax.scatter(train_par_1, train_par_2, color='blue', label='Training', alpha=0.7)
+    ax.scatter(train_par_1, train_par_2, color="blue", label="Training", alpha=0.7)
     
     ax.set_xlabel(config.objective_metrics[0])
     ax.set_ylabel(config.objective_metrics[1])
-    ax.set_title(f'Output metrics from training')
+    ax.set_title(f"Output metrics from training")
     
     return fig
 
@@ -60,19 +60,19 @@ def plot_data(train: torch.Tensor, result: torch.Tensor, acqv: float | torch.Ten
 
     train_par_1 = train[:,0]
     train_par_2 = train[:,1]
-    ax.scatter(train_par_1, train_par_2, color='blue', label='Training', alpha=0.7)
+    ax.scatter(train_par_1, train_par_2, color="blue", label="Training", alpha=0.7)
     
     res_par_1 = result[:,0]
     res_par_2 = result[:,1]
-    ax.scatter(res_par_1, res_par_2, color='red', label='Results', alpha=0.7)
+    ax.scatter(res_par_1, res_par_2, color="red", label="Results", alpha=0.7)
 
     ax.set_xlabel(config.optimization_parameters[0])
     ax.set_ylabel(config.optimization_parameters[1])
     a = acqv.tolist()
     if isinstance(a, list):
-        title = f'Results with \'{opt_name}\'\nacq_values: ' + ', '.join([f'{v:.4f}' for v in a])
+        title = f"Results with \"{opt_name}\"\nacq_values: " + ", ".join([f"{v:.4f}" for v in a])
     else:
-        title = f'Results with \'{opt_name}\'\nacq_value: {a:.4f}'
+        title = f"Results with \"{opt_name}\"\nacq_value: {a:.4f}"
     ax.set_title(title)
     ax.legend()
     
@@ -90,8 +90,8 @@ def plot_all(train_data: torch.Tensor, results: Dict, config: OptimizationConfig
         (candidates, acq_val), _ = entry
 
         acq_list = handle_acqv(acq_val)
-        acq_str = ', '.join([f"{val:.4f}" for val in acq_list])
-        lines.append(f'{name} - acq_val: [{acq_str}]')
+        acq_str = ", ".join([f"{val:.4f}" for val in acq_list])
+        lines.append(f"{name} - acq_val: [{acq_str}]")
         
         ax.scatter(candidates[:,0], candidates[:,1], c=[color], label=name, alpha=0.8)
 

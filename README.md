@@ -24,6 +24,7 @@ bayesian_optimization_library/
 │       ├── __init__.py
 │       ├── logger.py
 │       ├── processing.py
+│       ├── results_to_csv.py
 │       └── visualization.py
 ├── examples/
 │   ├── basic_candidate_generation.ipynb

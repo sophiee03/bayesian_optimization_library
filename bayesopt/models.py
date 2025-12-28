@@ -15,7 +15,7 @@ def train_model(config: OptimizationConfig, X_normalized: torch.Tensor, Y_data: 
         Y_data (Tensor): training metrics
 
     Returns:
-        (SingleTaskGP/ModelListGP):instance of the model created and trained
+        (SingleTaskGP/ModelListGP): instance of the model created and trained
     """ 
     if len(config.objective_metrics) == 1:
         model = SingleTaskGP(X_normalized, Y_data, outcome_transform=Standardize(m=1))

@@ -4,7 +4,7 @@ Library to perform Bayesian Optimization based on BoTorch library. It is useful 
 # Install and use the library
 1. Install the library 
 ```
-pip install BayesianOptimization
+pip install bayesopt
 ```
 2. Use the BayesianOptimizer class to perform bayesian optimization on your datasets
 
@@ -13,7 +13,7 @@ NB: examples of use are provided in the folder examples
 # Project Structure
 ```
 bayesian_optimization_library/
-├── bayesopt_core/
+├── bayesopt/
 │   ├── __init__.py
 │   ├── acquisition.py
 │   ├── bayesian_handler.py
@@ -26,9 +26,10 @@ bayesian_optimization_library/
 │       ├── processing.py
 │       └── visualization.py
 ├── examples/
-│   ├── basic_candidates_generation.ipynb
-│   ├── cand_generation_with_estimation.ipynb
-│   └── exec_with_yprov4ml.ipynb
+│   ├── basic_candidate_generation.ipynb
+│   ├── basic_candidate_execution.ipynb
+│   ├── detailed_cand_generation.ipynb
+│   └── change_config_in_execution.ipynb
 ├── pyproject.toml
 ├── README.md
 └── .gitignore

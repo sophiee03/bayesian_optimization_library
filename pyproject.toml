@@ -2,8 +2,13 @@
 requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+include = [
+    "bayesopt"
+]
+
 [project]
-name = "bayesian-optimization-library"
+name = "bayesopt"
 version = "0.1.0"
 description = "Bayesian optimization library built on BoTorch for HPT"
 readme = "README.md"
@@ -17,7 +22,6 @@ dependencies = [
   "botorch",
   "numpy",
   "gpytorch",
-  "logging",
   "matplotlib"
 ]
 
@@ -25,8 +29,3 @@ dependencies = [
 Homepage = "https://github.com/sophiee03/bayesian_optimization_library.git"
 Source = "https://github.com/sophiee03/bayesian_optimization_library.git"
 
-[tool.setuptools]
-package-dir = {"" = "bayesopt_core"}
-
-[tool.setuptools.packages.find]
-where = ["bayesopt_core"]

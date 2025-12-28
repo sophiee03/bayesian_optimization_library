@@ -58,9 +58,13 @@ class BayesianOptimizer:
         self.posterior = None
 
     def change_config(self, new_conf: OptimizationConfig):
-        """change configuration settings"""
+        """change configuration settings
+        
+        Args:
+            new_conf (OptimizationConfig): new configuration to adopt
+        """
         self.config = new_conf
-        print(f"Successfully changed BayesianOptimizer configuration")
+        print(f"Successfully changed BayesianOptimizer configuration: \n {self.config.details()}")
 
     def prepare_data(self, data: Dict):
         """process and normalize data with bounds generated
@@ -81,17 +85,17 @@ class BayesianOptimizer:
         if self.config.verbose:
             self.logger.info('   -> Bounds generated')
 
-        self.X_normalized = normalize_val(self.X_data, self.original_bounds)
+        self.X_norm = normalize_val(self.X_data, self.original_bounds)
 
         if self.config.verbose:
             self.logger.info('   -> Data normalized')
 
     def model_training(self):
         """train the model with the normalized data"""
-        if self.X_normalized is None:
+        if self.X_norm is None:
             raise RuntimeError("You must load and prepare data before training the model!")
         
-        self.model = train_model(self.config, self.X_normalized, self.Y_data)
+        self.model = train_model(self.config, self.X_norm, self.Y_data)
 
         if self.config.verbose:
             self.logger.info('   -> Model trained')
@@ -107,18 +111,18 @@ class BayesianOptimizer:
         if self.model == None:
             raise RuntimeError("You must train the model before performing optimization!")
         
-        candidates_normalized, val = get_candidates(self.config, self.model, self.X_normalized, self.Y_data, self.bounds_manager)
+        candidates_norm, val = get_candidates(self.config, self.model, self.X_norm, self.Y_data, self.bounds_manager)
 
         if self.config.verbose:
             self.logger.info('   -> Candidates obtained')
 
-        candidates_denormalized = denormalize_val(candidates_normalized, self.original_bounds)
+        candidates_denorm = denormalize_val(candidates_norm, self.original_bounds)
         if self.config.verbose:
             self.logger.info('   -> Candidates denormalized')
 
         acq_values = val if isinstance(val, list) else val.tolist()
         
-        return candidates_normalized, candidates_denormalized, acq_values
+        return candidates_norm, candidates_denorm, acq_values
     
     def estimate(self, candidates: torch.Tensor):
         """generate the posterior of the candidates generated
@@ -139,6 +143,7 @@ class BayesianOptimizer:
             std (Tensor)
         """
         mean_copy = mean.clone()
+        # the metrics to minimize will be negative so we have to change sign 
         for j, goal in enumerate(self.config.goal):
             if goal == 'MIN':
                 mean_copy[:, j] *= -1

@@ -15,6 +15,7 @@ class  OptimizationConfig:
         objective_metrics (List): metrics to maximize
         optimization_parameters (List): parameters to optimize
         goal (List[str]): objective (MAX/MIN) of each metric
+        ground_truth_dim (int): input dim
         n_candidates (int = 1): number of candidates the routine will produce
         n_restarts (int = 10): number of restarts for the optimization routine
         raw_samples (int = 200): number of random samples when initializing the optimization
@@ -26,6 +27,7 @@ class  OptimizationConfig:
     objective_metrics: List[str]
     optimization_parameters: List[str]
     goal: List[str]
+    ground_truth_dim: int
     n_candidates: int = 1
     n_restarts: int = 10
     raw_samples: int = 200
@@ -58,7 +60,7 @@ class  OptimizationConfig:
         
         if len(self.goal) != len(self.objective_metrics):
             raise ValueError(f"each metric must have a goal (max or min)")
-
+        
     def details(self):
         """print a summary of the configuration choices"""
         print(f"{'-'*60}")
@@ -66,7 +68,7 @@ class  OptimizationConfig:
         print(f"    executing a {'SINGLE' if len(self.objective_metrics)==1 else 'MULTI'} model with:")
         print(f"    - Parameters to optimize: {self.optimization_parameters}")
         print(f"    - Metrics to maximize/minimize: {self.objective_metrics}")
-        print(f"    {self.n_candidates} candidates are required to be generated")
+        print(f"    {self.n_candidates} candidates are required to be generated, with a ground truth of {self.ground_truth_dim} runs")
         print(f"    It will be used a {self.acqf} acquisition function \nwith {self.optimizers} as optimizer setup with the following settings:")
         print(f"    -> n_restarts: {self.n_restarts}    raw_samples: {self.raw_samples}")
         print(f"{'-'*60}")
@@ -77,6 +79,7 @@ class  OptimizationConfig:
             'objective_metrics': self.objective_metrics,
             'optimization_parameters': self.optimization_parameters,
             'goal': self.goal,
+            'ground_truth_dim': self.ground_truth_dim,
             'n_candidates': self.n_candidates,
             'n_restarts': self.n_restarts,
             'raw_samples': self.raw_samples,

@@ -65,7 +65,6 @@ class BayesianOptimizer:
             new_conf (OptimizationConfig): new configuration to adopt
         """
         self.config = new_conf
-        print(f"Successfully changed BayesianOptimizer configuration: \n {self.config.details()}")
 
     def change_bounds(self, new_bounds: List[List]):
         """change bounds
@@ -74,7 +73,6 @@ class BayesianOptimizer:
             new_bounds (List[List]): new bounds to update the original ones
         """
         self.original_bounds = torch.tensor(new_bounds, dtype=torch.float64)
-        print(f"Bounds updated successfully: \n{visualize_data(self.original_bounds)}")
 
     def prepare_data(self, data: Dict):
         """process and normalize data with bounds generated

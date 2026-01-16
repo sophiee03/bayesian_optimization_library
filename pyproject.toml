@@ -3,10 +3,7 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = [
-    "bayesopt"
-]
-
+where = "."
 [project]
 name = "bayesopt"
 version = "0.1.0"
@@ -22,7 +19,9 @@ dependencies = [
   "botorch",
   "numpy",
   "gpytorch",
-  "matplotlib"
+  "matplotlib",
+  "logging",
+  "tabulate"
 ]
 
 [project.urls]

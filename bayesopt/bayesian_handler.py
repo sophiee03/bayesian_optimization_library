@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import List, Dict, Any
-import torch
+import torch, os, json
 from tabulate import tabulate
 from .config import OptimizationConfig, Timer, BoundsGenerator
 from .helpers.logger import setup_console_logger
@@ -40,12 +40,13 @@ class BayesianOptimizer:
         original_bounds (Tensor): initial bounds of parameters
         posterior (botorch.posteriors.Posterior): BoTorch posterior object with predictions (mean and variance)
     """
-    def __init__(self, config: OptimizationConfig, bounds: List = None):
+    def __init__(self, config: OptimizationConfig, bounds: List = None, save_dir: str=None):
         """initialize optimization
         
         Args:
             config (OptimizationConfig): configuration of the BayesianOptimization
             bounds (List[List]): optional bounds passed as input to define the parameters domain
+            save_dir (str): directory where the library will save the logs
         """
         self.config = config
         self.logger = setup_console_logger()
@@ -57,6 +58,7 @@ class BayesianOptimizer:
         self.model = None
         self.original_bounds = bounds
         self.posterior = None
+        self.save_dir = save_dir
 
     def change_config(self, new_conf: OptimizationConfig):
         """change configuration settings
@@ -166,6 +168,31 @@ class BayesianOptimizer:
                 table.append([metric, mean_copy[i][j], std[i][j]])
             print(tabulate(table, headers=['METRIC', 'MEAN', 'STD'], tablefmt='simple_grid', floatfmt='.6f'), '\n')
 
+    def generate_json(self, res: OptimizationResults):
+        json_path = self.save_dir
+        os.makedirs(json_path, exist_ok=True)
+        json_file = f'{json_path}/{self.config.ground_truth_dim}_{self.config.n_candidates}_{self.config.beta}_logs.json'
+
+        with open(json_file, 'w') as f:
+            json.dump({
+                'config': self.config.return_dict(),
+                'X_ground_truth': self.X_data.tolist(),
+                'Y_ground_truth': minimization_transformation(self.Y_data, self.config).tolist(),
+                'X_norm': self.X_norm.tolist(),
+                'bounds': self.original_bounds.tolist(),
+                'results': {
+                    'candidates': res.candidates,
+                    'acq_values': res.acq_values,
+                    'posterior': {
+                        'mean': minimization_transformation(res.posterior.mean, self.config).tolist(),
+                        'variance': res.posterior.variance.sqrt().tolist()
+                    },
+                    'elapsed_time': float(res.time),
+                },
+            }, f, indent=2)
+        if self.config.verbose == True:
+            print(f"JSON generated: {json_file}")
+
     def update_training_set(self, new_data: Dict[str, List]):
         """method to update the ground truth data with the new ones passed
         
@@ -211,7 +238,12 @@ class BayesianOptimizer:
                 self.posterior.mean, 
                 self.posterior.variance.sqrt()
             )
+        
+        result = OptimizationResults(denorm_candidates, acq_value, self.timer.get_opt_time("tot_optimization"), self.posterior)
+        
+        if self.save_dir != None:
+            self.generate_json(result)
 
-        return OptimizationResults(denorm_candidates, acq_value, self.timer.get_opt_time("tot_optimization"), self.posterior)
+        return result
 
 

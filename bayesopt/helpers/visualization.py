@@ -3,11 +3,11 @@ from tabulate import tabulate
 from typing import List
 
 def visualize_data(d: torch.Tensor, headers: List):
-    """function to print data
+    """Function to print data
     
     Args:
         d (Tensor): data to visualize
-        headers (List[str]): parameter/metrics names
+        headers (List[str]): headers names
     """
     if isinstance(d, torch.Tensor):
         data = d.cpu().numpy().tolist()

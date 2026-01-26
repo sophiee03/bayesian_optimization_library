@@ -3,7 +3,7 @@ from ..config import OptimizationConfig
 from botorch.utils.transforms import normalize, unnormalize
 
 def minimization_transformation(data, config: OptimizationConfig):
-    """function to change sign of the metrics to minimize, to transform this problem in a maximization problem
+    """Function that change sign of the metrics to minimize, to transform this problem in a maximization problem
     
     Args:
         data (List[List]): data given as input for training
@@ -19,29 +19,25 @@ def minimization_transformation(data, config: OptimizationConfig):
     return data
 
 def normalize_val(x: torch.Tensor, bounds: torch.Tensor):
-    """function to normalize data
+    """Function to normalize data with the BoTorch method normalize()
     
     Args:
         x (Tensor): parameters to normalize
-        bounds (Tensor): bounds of parameters
+        bounds (Tensor): bounds for each parameter
 
     Returns:
-        X_norm (Tensor): parameters normalized
+        Tensor: parameters normalized in [0,1]
     """
-    X_norm = normalize(x, bounds)
-
-    return X_norm
+    return normalize(x, bounds)
 
 def denormalize_val(candidates: torch.Tensor, bounds: torch.Tensor) -> torch.Tensor:
-    """function to denormalize data to the original bounds and handle modelsize generated
+    """Function to denormalize data to the original bounds with the BoTorch method unnormalize()
     
     Args:
         candidates (Tensor): candidates generated
-        bounds (Tensor): bounds of the parameters
+        bounds (Tensor): original bounds of each parameter
 
     Returns: 
-        cand_denormalized (List): candidates denormalized
+        List: candidates denormalized
     """
-    cand_denormalized = unnormalize(candidates, bounds).tolist()
-    
-    return cand_denormalized
+    return unnormalize(candidates, bounds).tolist()

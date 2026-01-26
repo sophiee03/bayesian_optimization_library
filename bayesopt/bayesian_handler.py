@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from typing import List, Dict, Any
 import torch, os, json
+from datetime import datetime
 from tabulate import tabulate
 from .config import OptimizationConfig, Timer, BoundsGenerator
-from .helpers.logger import setup_console_logger
 from .helpers.processing import normalize_val, denormalize_val, minimization_transformation
 from .models import train_model
 from .optimizer import get_candidates
@@ -11,7 +11,7 @@ from .helpers.visualization import visualize_data
 
 @dataclass
 class OptimizationResults:
-    """dataclass for Bayesian Optimization results
+    """Dataclass for Bayesian Optimization results
     
     Attributes:
         candidates (List[List]): matrix of candidates denormalized
@@ -25,12 +25,10 @@ class OptimizationResults:
     posterior: Any
 
 class BayesianOptimizer:
-    """class to perform Bayesian Optimization routine
-    data processing -> train model -> generate acqf -> optimize -> denormalize -> make predictions on results -> return OptimizationResults
+    """Class to perform Bayesian Optimization routine
 
     Attributes:
         config (OptimizationConfig): configuration settings
-        logger (Logger): to log info
         timer (Timer): to measure elapsed time
         bounds_manager (BoundsGenerator): to generate bounds
         X_data (Tensor): parameters used as training data 
@@ -41,16 +39,15 @@ class BayesianOptimizer:
         posterior (botorch.posteriors.Posterior): BoTorch posterior object with predictions (mean and variance)
     """
     def __init__(self, config: OptimizationConfig, bounds: List = None, save_dir: str=None):
-        """initialize optimization
+        """Initialize optimization
         
         Args:
             config (OptimizationConfig): configuration of the BayesianOptimization
             bounds (List[List]): optional bounds passed as input to define the parameters domain
-            save_dir (str): directory where the library will save the logs
+            save_dir (str): directory where the library will save logs
         """
         self.config = config
-        self.logger = setup_console_logger()
-        self.timer = Timer(self.logger)
+        self.timer = Timer()
         self.bounds_manager = BoundsGenerator()
         self.X_data = None
         self.Y_data = None
@@ -60,24 +57,45 @@ class BayesianOptimizer:
         self.posterior = None
         self.save_dir = save_dir
 
-    def change_config(self, new_conf: OptimizationConfig):
-        """change configuration settings
+    def change_config(self, n_cand = None, n_restarts = None, raw_samples = None, optimizers = None, acqf = None, beta = None, verbose = None):
+        """Method to change configuration settings (only for certain attributes is possible otherwise the optimization is not consistent)
         
         Args:
-            new_conf (OptimizationConfig): new configuration to adopt
+            n_candidates (int)
+            n_restarts (int)
+            raw_samples (int)
+            optimizers (str)
+            acqf (str)
+            beta (float)
+            verbose (bool)
         """
+
+        new_conf = OptimizationConfig(
+            objective_metrics=self.config.objective_metrics,
+            optimization_parameters=self.config.optimization_parameters,
+            goal=self.config.goal,
+            ground_truth_dim=self.config.ground_truth_dim,
+            n_candidates=n_cand,
+            n_restarts=n_restarts,
+            raw_samples=raw_samples,
+            optimizers=optimizers,
+            acqf=acqf,
+            beta=beta,
+            verbose=verbose
+        )
         self.config = new_conf
 
+
     def change_bounds(self, new_bounds: List[List]):
-        """change bounds
+        """Method to change bounds
         
         Args: 
-            new_bounds (List[List]): new bounds to update the original ones
+            new_bounds (List[List]): new bounds
         """
         self.original_bounds = torch.tensor(new_bounds, dtype=torch.float64)
 
     def prepare_data(self, data: Dict):
-        """process and normalize data with bounds generated
+        """Method to process metrics based on their direction and normalize parameters with their bounds
         
         Args: 
             data (Dict): dictionary containing parameters and metrics
@@ -85,7 +103,7 @@ class BayesianOptimizer:
         data['metrics'] = minimization_transformation(data['metrics'], self.config)
 
         if self.config.verbose:
-            self.logger.info("   -> Data transformed")
+            print("   -> Data transformed")
 
         self.X_data = torch.tensor(data['parameters'], dtype=torch.float64)
         self.Y_data = torch.tensor(data['metrics'], dtype=torch.float64)
@@ -94,25 +112,25 @@ class BayesianOptimizer:
             self.original_bounds = self.bounds_manager.generate_bounds(self.X_data).to(dtype=torch.float64)
 
         if self.config.verbose:
-            self.logger.info("   -> Bounds generated")
+            print("   -> Bounds generated")
 
         self.X_norm = normalize_val(self.X_data, self.original_bounds)
 
         if self.config.verbose:
-            self.logger.info("   -> Data normalized")
+            print("   -> Data normalized")
 
     def model_training(self):
-        """train the model with the normalized data"""
+        """Method to train the model with the normalized data"""
         if self.X_norm is None:
             raise RuntimeError("You must load and prepare data before training the model!")
         
         self.model = train_model(self.config, self.X_norm, self.Y_data)
 
         if self.config.verbose:
-            self.logger.info("   -> Model trained")
+            print("   -> Model trained")
 
     def optimize(self):
-        """optimization performed by acquisition function and denormalization of results
+        """Method to perform optimization by acquisition function and denormalization of results
         
         Returns:
             candidates_normalized (Tensor): candidates normalized in [0,1]
@@ -125,18 +143,18 @@ class BayesianOptimizer:
         candidates_norm, val = get_candidates(self.config, self.model, self.X_norm, self.Y_data, self.bounds_manager)
 
         if self.config.verbose:
-            self.logger.info("   -> Candidates obtained")
+            print("   -> Candidates obtained")
 
         candidates_denorm = denormalize_val(candidates_norm, self.original_bounds)
         if self.config.verbose:
-            self.logger.info("   -> Candidates denormalized")
+            print("   -> Candidates denormalized")
 
         acq_values = val if isinstance(val, list) else val.tolist()
         
         return candidates_norm, candidates_denorm, acq_values
     
     def estimate(self, candidates: torch.Tensor):
-        """generate the posterior of the candidates generated
+        """Method to generate the posterior of the candidates generated
 
         Args:
             candidates (Tensor): candidates normalized generated
@@ -147,7 +165,7 @@ class BayesianOptimizer:
             self.posterior = self.model.posterior(candidates)
     
     def print_estimations(self, mean, std):
-        """visualize the estimations for the candidates generated
+        """Method to visualize the estimations for the candidates generated
         
         Args:
             mean (Tensor)
@@ -169,9 +187,15 @@ class BayesianOptimizer:
             print(tabulate(table, headers=['METRIC', 'MEAN', 'STD'], tablefmt='simple_grid', floatfmt='.6f'), '\n')
 
     def generate_json(self, res: OptimizationResults):
+        """Method to log runtime informations into a JSON
+
+        Args: 
+            res (OptimizationResults): instance of optimization results obtained
+        """
         json_path = self.save_dir
         os.makedirs(json_path, exist_ok=True)
-        json_file = f'{json_path}/{self.config.ground_truth_dim}_{self.config.n_candidates}_{self.config.beta}_logs.json'
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        json_file = f'{json_path}/data_{timestamp}_logs.json'
 
         with open(json_file, 'w') as f:
             json.dump({
@@ -194,7 +218,7 @@ class BayesianOptimizer:
             print(f"JSON generated: {json_file}")
 
     def update_training_set(self, new_data: Dict[str, List]):
-        """method to update the ground truth data with the new ones passed
+        """Method to append the new data passed to the training set
         
         Args:
             new_data (Dict): dictionary containing parameters and metrics values 
@@ -207,7 +231,7 @@ class BayesianOptimizer:
         self.X_norm = normalize_val(self.X_data, self.original_bounds)
     
     def run(self, data: Dict = None) -> OptimizationResults:
-        """Run all the Bayesian Optimization pipeline and return final results
+        """Method to run all the Bayesian Optimization pipeline and return final results
         
         Args:
             data (Dict): optional data provided by the user as training dataset 
@@ -218,7 +242,7 @@ class BayesianOptimizer:
         """
         with self.timer.measure("tot_optimization"):
             if self.config.verbose:
-                self.logger.info("   -> Starting Bayesian Optimization")
+                print("   -> Starting Bayesian Optimization")
             if data is not None:
                 self.prepare_data(data)
             elif self.X_data is None or self.Y_data is None or self.X_norm is None:
@@ -227,9 +251,9 @@ class BayesianOptimizer:
             norm_candidates, denorm_candidates, acq_value = self.optimize()
 
         if self.config.verbose:
-            self.logger.info(f"   -> Bayesian Optimization finished, took {round(self.timer.get_opt_time('tot_optimization'), 3)}s")
+            print(f"   -> Bayesian Optimization finished, took {round(self.timer.get_opt_time('tot_optimization'), 3)}s")
             visualize_data(denorm_candidates, self.config.optimization_parameters)
-            self.logger.info(f"   -> Estimating candidates")
+            print(f"   -> Estimating candidates")
         
         self.estimate(norm_candidates)
 

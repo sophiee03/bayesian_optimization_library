@@ -2,9 +2,10 @@ from .config import OptimizationConfig, OPTIMIZERS, BoundsGenerator
 from botorch.optim import optimize_acqf, optimize_acqf_cyclic
 from botorch.optim.initializers import gen_batch_initial_conditions
 from .acquisition import generate_acqf
+import torch
 
 def basic_optim(acqf, bm: BoundsGenerator, config: OptimizationConfig):
-    """function to optimize the acquisition function generated with optimize_acqf
+    """Function to perform optimization with optimize_acqf
     
     Args: 
         acqf: acquisition function generated
@@ -25,7 +26,7 @@ def basic_optim(acqf, bm: BoundsGenerator, config: OptimizationConfig):
     return candidates, acq_value
 
 def cyclic_optim(acqf, bm: BoundsGenerator, config: OptimizationConfig):
-    """function to optimize the acquisition function generated with optimize_acqf_cyclic
+    """Function to perform optimization with optimize_acqf_cyclic
 
     Args: 
         acqf: acquisition function generated
@@ -47,7 +48,7 @@ def cyclic_optim(acqf, bm: BoundsGenerator, config: OptimizationConfig):
     return candidates, acq_value
 
 def batch_init_cond_optim(acqf, bm: BoundsGenerator, config: OptimizationConfig):
-    """function to optimize the acquisition function generated with an initial condition
+    """Function to perform optimization with an initial condition and optimize_acqf
         
     Args: 
         acqf (AcquisitionFunction): acquisition function generated
@@ -82,7 +83,7 @@ def batch_init_cond_optim(acqf, bm: BoundsGenerator, config: OptimizationConfig)
     return candidates, acq_value
 
 def get_candidates(config: OptimizationConfig, model, X, Y, bm: BoundsGenerator):
-    """function that generate the acquisition function and find candidates
+    """Function that generate the acquisition function and call the optimizer chosen to obtain candidates
     
     Args: 
         config (OptimizationConfig): configuration of the BayesianOptimization (needed for optimizers settings)
@@ -92,9 +93,21 @@ def get_candidates(config: OptimizationConfig, model, X, Y, bm: BoundsGenerator)
         bm (BoundsGenerator): instance to generate normalized bounds for the parameters
     
     Returns: 
-        (candidates (List[List]), acq_values (List[float])): candidates generated and its acquisition values
+        Tuple: candidates generated and its acquisition values
     """
-    acqf = generate_acqf(config, model,X, Y)
+
+    if len(config.objective_metrics) == 1:
+        Y_std, _ = model.outcome_transform(Y)
+    else:
+        std_list = []
+        for i, m in enumerate(model.models):
+            yi = Y[:,i].unsqueeze(-1)
+            yistd, _ = m.outcome_transform(yi)
+            std_list.append(yistd)
+
+        Y_std = torch.cat(std_list, dim=-1)
+
+    acqf = generate_acqf(config, model, X, Y_std)
     
     if config.optimizers == OPTIMIZERS[0]:
         result = basic_optim(acqf, bm, config)

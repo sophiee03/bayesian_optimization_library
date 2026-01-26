@@ -1,35 +1,37 @@
 import torch
 from .config import OptimizationConfig, ACQF
-from botorch.acquisition import qLogExpectedImprovement, qLogNoisyExpectedImprovement, qUpperConfidenceBound
+from botorch.acquisition import LogExpectedImprovement, qLogExpectedImprovement, qUpperConfidenceBound, qLogNoisyExpectedImprovement
 from botorch.acquisition.multi_objective.logei import qLogExpectedHypervolumeImprovement
 from botorch.utils.multi_objective.box_decompositions.non_dominated import FastNondominatedPartitioning
 from botorch.acquisition.objective import ScalarizedPosteriorTransform
 
-def generate_acqf(config: OptimizationConfig, model, X: torch.Tensor, Y: torch.Tensor):
-    """function to generate the acquisition function for single or multi objective:
-        - qlogei = MC-based batch log expected improvement
-        - qlognei = MC-based batch noisy expected improvement
-        - qlogehvi = parallel log expected hypervolume improvement supporting 2+ outcomes
-        - qucb = MC-based batch upper confidence bound
-    
+def generate_acqf(config: OptimizationConfig, model, X: torch.Tensor, Y_std: torch.Tensor):
+    """Function to generate the acquisition function
+    If the objective is SINGLE the choice is automatically set to LogExpectedImprovement. 
+    If the objective is MULTI it allows to choose among the following BoTorch acquisition functions:
+        - qLogEI = MC-based batch log expected improvement
+        - qLogNEI = MC-based batch noisy expected improvement
+        - qLogEHVI = parallel log expected hypervolume improvement supporting 2+ outcomes
+        - qUCB = MC-based batch upper confidence bound
+
     Args:
         config (OptimizationConfig): configuration of the BayesianOptimization (needed for function choice and settings)
         model (SingleTaskGP/ModelListGP): model trained
         X (Tensor): training parameters normalized
-        Y (Tensor): training metrics
+        Y (Tensor): training metrics standardized
 
     Returns:
         AcquisitionFunction: instance of the acquisition function generated
     """
     if len(config.objective_metrics) == 1:
-        acq = qLogExpectedImprovement(
+        acq = LogExpectedImprovement(
             model=model, 
-            best_f=Y.max()
+            best_f=Y_std.max()
         )
     else:
-        if config.acqf == ACQF[3]: 
-            ref_point = Y.min(dim=0)[0] - 0.1 * (Y.max(dim=0)[0] - Y.min(dim=0)[0])
-            partitioning = FastNondominatedPartitioning(ref_point, Y)
+        if config.acqf == ACQF[3]:
+            ref_point = Y_std.min(dim=0)[0] - 0.1 * (Y_std.max(dim=0)[0] - Y_std.min(dim=0)[0])
+            partitioning = FastNondominatedPartitioning(ref_point, Y_std)
             ref_point = ref_point.tolist()
             acq = qLogExpectedHypervolumeImprovement(
                 model=model,
@@ -41,7 +43,7 @@ def generate_acqf(config: OptimizationConfig, model, X: torch.Tensor, Y: torch.T
             posterior_transform = ScalarizedPosteriorTransform(weights=weights)
             acq = qLogExpectedImprovement(
                 model=model, 
-                best_f=Y.max(),
+                best_f=Y_std.max(),
                 posterior_transform=posterior_transform
             )
         elif config.acqf == ACQF[1]:

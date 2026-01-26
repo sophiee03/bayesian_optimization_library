@@ -1,12 +1,15 @@
-# BAYESIAN OPTIMIZATION WITH BOTORCH
-Library to perform Bayesian Optimization based on BoTorch library. It is useful for HyperParameterTuning (HPT) problems since it finds parameters that maximizes the objective metrics (or minimizes them if you set it to). 
+# BAYESIAN OPTIMIZATION LIBRARY
+Library to perform Bayesian Optimization using BoTorch. 
+It's purpose is to resolve HyperParameterTuning (HPT) problems since it finds the best parameters to maximize the objective metric(s) (or minimize them if you set it to). 
+It allows to optimize with MULTI or SINGLE objective (either in both directions MAX/MIN)
+The configuration is fully customizable, you can choose different: parameters, metrics, number of candidates to generate, number of restarts, number of raw samples to generate, the optimizer and acquisition function to use, the beta value for exploration-exploitation balance.
 
 # Install and use the library
 1. Install the library 
 ```
 pip install bayesopt
 ```
-2. Use the BayesianOptimizer class to perform bayesian optimization on your training datasets
+2. Use the BayesianOptimizer class to perform bayesian optimization on your training datasets [view examples](https://github.com/sophiee03/bayesian_optimization_library/tree/main/examples)
 
 # What you need to know
 - The library has a BayesianOptimizer method to perform the entire optimization, it is called `.run()` and takes as arguments:
@@ -18,10 +21,10 @@ pip install bayesopt
         }
         ```
     - optionally a list with the bounds of the parameters (otherwise they will be generated automatically)
-An example of this execution is provided [here](https://github.com/sophiee03/bayesian_optimization_library/blob/main/examples/basic_candidate_generation.ipynb)
-- If you prefer to see the entire pipeline you can opt to use each method of the BayesianOptimizer class as shown [detailed execution example](https://github.com/sophiee03/bayesian_optimization_library/blob/main/examples/detailed_cand_generation.ipynb)
+An example of this simple execution is provided in the [basic candidate generation example](https://github.com/sophiee03/bayesian_optimization_library/blob/main/examples/basic_candidate_generation.ipynb)
+- If you prefer to see the entire pipeline you can opt to use each method of the BayesianOptimizer class as shown in the [detailed candidate generation example](https://github.com/sophiee03/bayesian_optimization_library/blob/main/examples/detailed_cand_generation.ipynb)
 - It is also possible to change configuration without the creation of another instance as shown in [this example](https://github.com/sophiee03/bayesian_optimization_library/blob/main/examples/change_config_in_execution.ipynb)
-- If you want to iteratively execute the optimization, the method `.update_training_dataset()` allow to add the candidates executied without re-loading the entire dataset
+- If you want to iteratively execute the optimization, the method `.update_training_dataset()` allow to add the candidates executed without re-loading the entire training dataset
     NB: when you have already loaded the dataset it is saved in the BayesianOptimizer instance so it is not necessary to re-pass the data dictionary when calling `.run()`
 - If you want to modify the bounds you can use the method `.change_bounds()`
 
@@ -37,7 +40,6 @@ bayesian_optimization_library/
 │   ├── optimizer.py
 │   └── helpers/
 │       ├── __init__.py
-│       ├── logger.py
 │       ├── processing.py
 │       └── visualization.py
 ├── examples/
@@ -48,5 +50,4 @@ bayesian_optimization_library/
 ├── pyproject.toml
 ├── README.md
 └── .gitignore
-
 ```

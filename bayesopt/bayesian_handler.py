@@ -186,6 +186,29 @@ class BayesianOptimizer:
                 table.append([metric, mean_copy[i][j], std[i][j]])
             print(tabulate(table, headers=['METRIC', 'MEAN', 'STD'], tablefmt='simple_grid', floatfmt='.6f'), '\n')
 
+    def logs_dict(self, res: OptimizationResults = None):
+        """Method to get a dictionary with the information to log (including results if passed)
+
+        Args: 
+            res (OptimizationResults): optional instance of optimization results
+        """
+        return {
+            'config': self.config.return_dict(),
+            'X_ground_truth': self.X_data.tolist(),
+            'Y_ground_truth': minimization_transformation(self.Y_data, self.config).tolist(),
+            'X_norm': self.X_norm.tolist(),
+            'bounds': self.original_bounds.tolist(),
+            'results': {
+                'candidates': [res.candidates if res != None else None],
+                'acq_values': [res.acq_values if res != None else None],
+                'posterior': {
+                    'mean': [minimization_transformation(res.posterior.mean, self.config).tolist() if res != None else None],
+                    'variance': [res.posterior.variance.sqrt().tolist() if res != None else None]
+                },
+                'elapsed_time': [float(res.time) if res != None else None],
+            },
+        }
+
     def generate_json(self, res: OptimizationResults):
         """Method to log runtime informations into a JSON
 

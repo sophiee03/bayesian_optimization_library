@@ -8,4 +8,4 @@ __pycache__
 *.csv
 benchmark_test/
 *.egg-info
-*/examples/logs
+./examples/logs/

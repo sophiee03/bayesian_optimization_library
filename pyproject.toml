@@ -21,7 +21,8 @@ dependencies = [
   "gpytorch",
   "matplotlib",
   "logging",
-  "tabulate"
+  "tabulate",
+  "yprov4ml",
 ]
 
 [project.urls]

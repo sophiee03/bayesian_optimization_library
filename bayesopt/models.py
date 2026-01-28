@@ -27,4 +27,4 @@ def train_model(config: OptimizationConfig, X_normalized: torch.Tensor, Y_data: 
     
     fit_gpytorch_mll(mll)
 
-    return model
+    return model, mll

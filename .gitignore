@@ -9,3 +9,5 @@ __pycache__
 benchmark_test/
 *.egg-info
 examples/logs/
+examples/script.py
+examples/iterative_execution.ipynb

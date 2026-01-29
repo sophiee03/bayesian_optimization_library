@@ -227,7 +227,7 @@ class BayesianOptimizer:
         if self.config.verbose == True:
             print(f"JSON generated: {json_path}")
         
-        yprov4ml.log_artifact(f"{json_file}", json_path, is_input=False)
+        yprov4ml.log_artifact(f"{json_file}", json_path, is_input=False, log_copy_in_prov_directory=True)
 
     def update_training_set(self, new_data: Dict[str, List]):
         """Method to append the new data passed to the training set
